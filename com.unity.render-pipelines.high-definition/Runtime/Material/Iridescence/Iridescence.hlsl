@@ -221,10 +221,14 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     // We modify the bsdfData.fresnel0 here for iridescence
     // if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_IRIDESCENCE))
     {
-        float viewAngle = NdotV;
-        float topIor = 1.0; // Default is air
+        float viewAngle = NdotV; // NOTE: THIS IS NOT GENERALLY THE CASE!
+        float thickness = bsdfData.iridescenceThickness;
+        float eta1 = 1.0; // Default is air
+        float eta2 = bsdfData.iridescenceEta2;
+        float3 eta3 = bsdfData.iridescenceEta3;
+        float3 kappa3 = bsdfData.iridescenceKappa3;
 
-        bsdfData.fresnel0 = EvalIridescence(topIor, viewAngle, bsdfData.iridescenceThickness, bsdfData.fresnel0);
+        bsdfData.fresnel0 = EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
     }
 
     // Handle IBL + area light + multiscattering.
@@ -351,8 +355,14 @@ void BSDF(  float3 V, float3 L, float NdotL, float3 positionWS, PreLightData pre
     // Thus why we shouldn't apply a second time Fresnel on the value if iridescence is enabled.
     /// if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_IRIDESCENCE))
     {
-        // TODO stuff.
-        F = bsdfData.fresnel0;
+        float viewAngle = LdotH;
+        float thickness = bsdfData.iridescenceThickness;
+        float eta1 = 1.0; // Default is air
+        float eta2 = bsdfData.iridescenceEta2;
+        float3 eta3 = bsdfData.iridescenceEta3;
+        float3 kappa3 = bsdfData.iridescenceKappa3;
+
+        F = EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
     }
 
     float DV = DV_SmithJointGGX(NdotH, NdotL, NdotV, bsdfData.roughness, preLightData.partLambdaV);

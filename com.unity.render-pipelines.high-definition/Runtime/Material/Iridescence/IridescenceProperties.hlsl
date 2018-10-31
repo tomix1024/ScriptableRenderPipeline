@@ -4,9 +4,6 @@
 // Otherwise those parameters are not bound correctly at runtime.
 // ===========================================================================
 
-TEXTURE2D(_DistortionVectorMap);
-SAMPLER(sampler_DistortionVectorMap);
-
 // TEXTURE2D(_NormalMap);
 // SAMPLER(sampler_NormalMap);
 
@@ -18,16 +15,10 @@ float _AlphaCutoffPrepass;
 float _AlphaCutoffPostpass;
 float4 _DoubleSidedConstants;
 
-// Specular AA
-float _EnableGeometricSpecularAA;
-float _SpecularAAScreenSpaceVariance;
-float _SpecularAAThreshold;
-
-
 // Set of users variables
 float _Smoothness;
 
-float _NormalScale;
+// float _NormalScale;
 
 float _IridescenceThickness;
 float _IridescenceEta2;
