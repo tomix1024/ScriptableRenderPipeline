@@ -19,8 +19,16 @@
 // Enable reference mode for IBL and area lights
 // Both reference define below can be define only if LightLoop is present, else we get a compile error
 #ifdef HAS_LIGHTLOOP
-// #define LIT_DISPLAY_REFERENCE_AREA
-// #define LIT_DISPLAY_REFERENCE_IBL
+// #define IRIDESCENCE_DISPLAY_REFERENCE_AREA
+#if defined(IRIDESCENCE_DISPLAY_REFERENCE_IBL_16)
+#define IRIDESCENCE_DISPLAY_REFERENCE_IBL 16
+#elif defined(IRIDESCENCE_DISPLAY_REFERENCE_IBL_256)
+#define IRIDESCENCE_DISPLAY_REFERENCE_IBL 256
+#elif defined(IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048)
+#define IRIDESCENCE_DISPLAY_REFERENCE_IBL 2048
+#elif defined(IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K)
+#define IRIDESCENCE_DISPLAY_REFERENCE_IBL 16*1024
+#endif
 #endif
 
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/LTCAreaLight/LTCAreaLight.hlsl"
@@ -515,7 +523,7 @@ DirectLighting EvaluateBSDF_Punctual(LightLoopContext lightLoopContext,
     return lighting;
 }
 
-// #include "LitReference.hlsl"
+#include "IridescenceReference.hlsl"
 
 //-----------------------------------------------------------------------------
 // EvaluateBSDF_Line - Approximation with Linearly Transformed Cosines
@@ -616,9 +624,9 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
     float3 positionWS = posInput.positionWS;
     float weight = 1.0;
 
-#ifdef LIT_DISPLAY_REFERENCE_IBL
+#ifdef IRIDESCENCE_DISPLAY_REFERENCE_IBL
 
-    envLighting = IntegrateSpecularGGXIBLRef(lightLoopContext, V, preLightData, lightData, bsdfData);
+    envLighting = IntegrateSpecularGGXIBLRef(lightLoopContext, V, preLightData, lightData, bsdfData, IRIDESCENCE_DISPLAY_REFERENCE_IBL);
 
     // TODO: Do refraction reference (is it even possible ?)
     // TODO: handle clear coat
@@ -674,7 +682,7 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
         envLighting = F * preLD.rgb;
     }
 
-#endif // LIT_DISPLAY_REFERENCE_IBL
+#endif // IRIDESCENCE_DISPLAY_REFERENCE_IBL
 
     UpdateLightingHierarchyWeights(hierarchyWeight, weight);
     envLighting *= weight * lightData.multiplier;
@@ -701,7 +709,8 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
 #else
     GetScreenSpaceAmbientOcclusionMultibounce(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, bsdfData.diffuseColor, bsdfData.fresnel0, aoFactor);
 #endif
-    ApplyAmbientOcclusionFactor(aoFactor, builtinData, lighting);
+    // TODO this breaks things in this shader
+    // ApplyAmbientOcclusionFactor(aoFactor, builtinData, lighting);
 
     // Subsurface scattering mode
     float3 modifiedDiffuseColor = bsdfData.diffuseColor; //GetModifiedDiffuseColorForSSS(bsdfData);
