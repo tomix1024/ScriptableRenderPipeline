@@ -15,6 +15,7 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     surfaceData.specularOcclusion = 1;
 
     // Fill uniform data
+    surfaceData.fresnel0 = _Fresnel0.rgb;
     surfaceData.perceptualSmoothness = _Smoothness;
     surfaceData.iridescenceThickness = _IridescenceThickness;
     surfaceData.iridescenceEta2 = _IridescenceEta2;

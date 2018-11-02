@@ -13,10 +13,11 @@
 #define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_NORMAL                      (1002)
 #define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_NORMAL_VIEW_SPACE           (1003)
 #define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_SMOOTHNESS                  (1004)
-#define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_IRIDESCENCE_LAYER_THICKNESS (1005)
-#define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_IRIDESCENCE_LAYER_ETA       (1006)
-#define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_IRIDESCENCE_BASE_ETA        (1007)
-#define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_IRIDESCENCE_BASE_KAPPA      (1008)
+#define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_FRESNEL0                    (1005)
+#define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_IRIDESCENCE_LAYER_THICKNESS (1006)
+#define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_IRIDESCENCE_LAYER_ETA       (1007)
+#define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_IRIDESCENCE_BASE_ETA        (1008)
+#define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_IRIDESCENCE_BASE_KAPPA      (1009)
 
 //
 // UnityEngine.Experimental.Rendering.HDPipeline.Iridescence+BSDFData:  static fields
@@ -42,6 +43,7 @@ struct SurfaceData
     float specularOcclusion;
     float3 normalWS;
     float perceptualSmoothness;
+    float3 fresnel0;
     float iridescenceThickness;
     float iridescenceEta2;
     float iridescenceEta3;
@@ -86,6 +88,10 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
             break;
         case DEBUGVIEW_IRIDESCENCE_SURFACEDATA_SMOOTHNESS:
             result = surfacedata.perceptualSmoothness.xxx;
+            break;
+        case DEBUGVIEW_IRIDESCENCE_SURFACEDATA_FRESNEL0:
+            result = surfacedata.fresnel0;
+            needLinearToSRGB = true;
             break;
         case DEBUGVIEW_IRIDESCENCE_SURFACEDATA_IRIDESCENCE_LAYER_THICKNESS:
             result = surfacedata.iridescenceThickness.xxx;

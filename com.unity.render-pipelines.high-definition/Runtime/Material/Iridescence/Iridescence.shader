@@ -8,6 +8,7 @@ Shader "HDRenderPipeline/Iridescence"
         // Reminder. Color here are in linear but the UI (color picker) do the conversion sRGB to linear
 
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 1.0
+        _Fresnel0("Fresnel0 for IBL", Color) = (1,1,1,1)
 
         // _NormalMap("NormalMap", 2D) = "bump" {}     // Tangent space normal map
         // _NormalScale("_NormalScale", Range(0.0, 8.0)) = 1

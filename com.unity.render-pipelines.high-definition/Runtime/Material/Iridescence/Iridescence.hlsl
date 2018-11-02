@@ -137,6 +137,7 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     bsdfData.normalWS            = surfaceData.normalWS;
     bsdfData.perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(surfaceData.perceptualSmoothness);
     bsdfData.roughness           = PerceptualRoughnessToRoughness(bsdfData.perceptualRoughness);
+    bsdfData.fresnel0            = surfaceData.fresnel0;
 
     // Check if we read value of normal and roughness from buffer. This is a tradeoff
 #ifdef FORWARD_MATERIAL_READ_FROM_WRITTEN_NORMAL_BUFFER
@@ -228,6 +229,13 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
     // We modify the bsdfData.fresnel0 here for iridescence
     // if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_IRIDESCENCE))
+    // ....
+
+    // Handle IBL + area light + multiscattering.
+    // Note: use the not modified by anisotropy iblPerceptualRoughness here.
+    float specularReflectivity;
+    GetPreIntegratedFGDGGXAndDisneyDiffuse(NdotV, preLightData.iblPerceptualRoughness, bsdfData.fresnel0, preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);
+
     {
         float viewAngle = NdotV; // NOTE: THIS IS NOT GENERALLY THE CASE!
         float thickness = bsdfData.iridescenceThickness;
@@ -236,13 +244,8 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float3 eta3 = bsdfData.iridescenceEta3;
         float3 kappa3 = bsdfData.iridescenceKappa3;
 
-        bsdfData.fresnel0 = EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
+        preLightData.specularFGD *= EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
     }
-
-    // Handle IBL + area light + multiscattering.
-    // Note: use the not modified by anisotropy iblPerceptualRoughness here.
-    float specularReflectivity;
-    GetPreIntegratedFGDGGXAndDisneyDiffuse(NdotV, preLightData.iblPerceptualRoughness, bsdfData.fresnel0, preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);
 #ifdef USE_DIFFUSE_LAMBERT_BRDF
     preLightData.diffuseFGD = 1.0;
 #endif

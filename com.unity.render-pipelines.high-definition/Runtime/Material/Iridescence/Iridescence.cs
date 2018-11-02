@@ -22,6 +22,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             [SurfaceDataAttributes("Smoothness")]
             public float perceptualSmoothness;
 
+            [SurfaceDataAttributes("Fresnel0")]
+            public Vector3 fresnel0;
+
             // Iridescence
             [SurfaceDataAttributes("Iridescence Layer Thickness")]
             public float iridescenceThickness;

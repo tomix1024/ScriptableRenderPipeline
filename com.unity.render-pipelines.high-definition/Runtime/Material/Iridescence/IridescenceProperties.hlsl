@@ -18,6 +18,8 @@ float4 _DoubleSidedConstants;
 // Set of users variables
 float _Smoothness;
 
+float4 _Fresnel0;
+
 // float _NormalScale;
 
 float _IridescenceThickness;
