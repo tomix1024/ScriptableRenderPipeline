@@ -96,6 +96,80 @@ real3 F_FresnelConductor(real3 eta, real3 etak2, real cosTheta)
     return 0.5 * (Rp + Rs);
 }
 
+real3 F_FresnelConductor(real3 eta, real3 etak2, real cosTheta, out real3 Rp, out real3 Rs)
+{
+    real cosTheta2 = cosTheta * cosTheta;
+    real sinTheta2 = 1.0 - cosTheta2;
+    real3 eta2 = eta * eta;
+
+    real3 t0 = eta2 - etak2 - sinTheta2;
+    real3 a2plusb2 = sqrt(t0 * t0 + 4.0 * eta2 * etak2);
+    real3 t1 = a2plusb2 + cosTheta2;
+    real3 a = sqrt(0.5 * (a2plusb2 + t0));
+    real3 t2 = 2.0 * a * cosTheta;
+    Rs = (t1 - t2) / (t1 + t2);
+
+    real3 t3 = cosTheta2 * a2plusb2 + sinTheta2 * sinTheta2;
+    real3 t4 = t2 * sinTheta2;
+    Rp = Rs * (t3 - t4) / (t3 + t4);
+
+    return 0.5 * (Rp + Rs);
+}
+
+void ComplexSquareRoot(float3 sq_re, float3 sq_im, out float3 re, out float3 im)
+{
+    float3 phi = atan2(sq_im, sq_re);
+    float3 r = sqrt(sq_re * sq_re + sq_im * sq_im);
+
+    r = sqrt(r);
+    phi /= 2;
+
+    re = r * cos(phi);
+    im = r * sin(phi);
+}
+
+/*
+void F_FresnelConductorPhase(real3 eta_re, real3 eta_im, real cosTheta, out real3 phi_p, out real3 phi_s)
+{
+    real cosTheta_sq = cosTheta * cosTheta;
+
+    real3 eta_re_sq = eta_re * eta_re;
+    real3 eta_im_sq = eta_im * eta_im;
+
+    real3 eta_abs_sq = eta_re_sq + eta_im_sq;
+
+    real3 eta_sq_re = eta_re_sq - eta_im_sq;
+    // real3 eta_sq_im = 2 * eta_re * eta_im;
+
+    real3 eta_sq_re_sq = eta_sq_re * eta_sq_re;
+    // real3 eta_sq_im_sq = eta_sq_im * eta_sq_im;
+    real3 eta_sq_im_sq = 4 * eta_re_sq * eta_im_sq;
+
+    real3 eta_sq_inv_re = eta_sq_re_sq / (eta_sq_re_sq + eta_sq_im_sq);
+    real3 eta_sq_inv_im = -eta_sq_im_sq / (eta_sq_re_sq + eta_sq_im_sq);
+
+    real3 cosThetaTrans_sq_re = 1 - eta_sq_inv_re * (1 - cosTheta_sq);
+    real3 cosThetaTrans_sq_im = 0 - eta_sq_inv_im * (1 - cosTheta_sq);
+
+    real3 cosThetaTrans_re = 0; // TODO!
+    real3 cosThetaTrans_im = 0; // TODO!
+    ComplexSquareRoot(cosThetaTrans_sq_re, cosThetaTrans_sq_im, cosThetaTrans_re, cosThetaTrans_im);
+
+    real3 cosThetaTrans_re_sq = cosThetaTrans_re * cosThetaTrans_re;
+    real3 cosThetaTrans_im_sq = cosThetaTrans_im * cosThetaTrans_im;
+    real3 cosThetaTrans_abs_sq = cosThetaTrans_re_sq + cosThetaTrans_im_sq;
+
+    real3 rp_re = eta_abs_sq * cosTheta_sq - cosThetaTrans_abs_sq;
+    real3 rp_im = 2 * cosTheta * (eta_im * cosThetaTrans_re - eta_re * cosThetaTrans_im);
+
+    real3 rs_re = cosTheta_sq - eta_abs_sq * cosThetaTrans_abs_sq;
+    real3 rs_im = -2 * cosTheta * (eta_im * cosThetaTrans_re + eta_re * cosThetaTrans_im);
+
+    phi_p = atan2(rp_im, rp_re);
+    phi_s = atan2(rs_im, rs_re);
+}
+*/
+
 // Conversion FO/IOR
 
 TEMPLATE_2_REAL(IorToFresnel0, transmittedIor, incidentIor, return Sq((transmittedIor - incidentIor) / (transmittedIor + incidentIor)) )
@@ -511,14 +585,16 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real eta2, real layerThi
     real cosTheta2 = sqrt(1.0 - sinTheta2);
 
     // First interface
-    real R12 = F_FresnelConductor(eta2/eta1, 0, cosTheta1);
-    real R21 = R12;
-    real T121 = 1.0 - R12;
+    real3 R12p, R12s;
+    F_FresnelConductor(eta2/eta1, 0, cosTheta1, R12p, R12s);
+    real3 T12p = 1.0 - R12p;
+    real3 T12s = 1.0 - R12s;
     real phi12 = 0.0;
-    real phi21 = PI - phi12;
+    real phi21 = phi12 + PI; // TODO: rotate 180 degree?!
 
     // Second interface
-    real3 R23 = F_FresnelConductor(eta3/eta2, kappa3/eta2, cosTheta2);
+    real3 R23p, R23s;
+    F_FresnelConductor(eta3/eta2, kappa3/eta2, cosTheta2, R23p, R23s);
     real  phi23 = 0.0;
 
     // Phase shift
@@ -526,29 +602,37 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real eta2, real layerThi
     real phi = phi21 + phi23;
 
     // Compound terms
-    real3 R123 = R12 * R23;
-    real3 r123 = sqrt(R123);
-    real3 Rs = Sq(T121) * R23 / (real3(1.0, 1.0, 1.0) - R123);
+    real3 R123p = R12p * R23p;
+    real3 r123p = sqrt(R123p);
+    real3 Rstarp = Sq(T12p) * R23p / (real3(1.0, 1.0, 1.0) - R123p);
+    real3 R123s = R12s * R23s;
+    real3 r123s = sqrt(R123s);
+    real3 Rstars = Sq(T12s) * R23s / (real3(1.0, 1.0, 1.0) - R123s);
 
     // Reflectance term for m = 0 (DC term amplitude)
-    real3 C0 = R12 + Rs;
-    real3 I = C0;
+    real3 C0p = R12p + Rstarp;
+    real3 C0s = R12s + Rstars;
+    real3 I = C0p + C0s;
 
     // Reflectance term for m > 0 (pairs of diracs)
-    real3 Cm = Rs - T121;
+    real3 Cmp = Rstarp - T12p;
+    real3 Cms = Rstars - T12s;
     for (int m = 1; m <= 2; ++m)
     {
-        Cm *= r123;
-        real3 Sm = 2.0 * EvalSensitivity(m * OPD, m * phi);
-        //vec3 SmP = 2.0 * evalSensitivity(m*OPD, m*phi2.y);
-        I += Cm * Sm;
+        Cmp *= r123p;
+        real3 Smp = 2.0 * EvalSensitivity(m * OPD, m * phi);
+        I += Cmp * Smp;
+
+        Cms *= r123s;
+        real3 Sms = 2.0 * EvalSensitivity(m * OPD, m * phi);
+        I += Cms * Sms;
     }
 
     // Convert back to RGB reflectance
     //I = clamp(mul(I, XYZ_TO_RGB), real3(0.0, 0.0, 0.0), real3(1.0, 1.0, 1.0));
     //I = mul(XYZ_TO_RGB, I);
 
-    return I;
+    return 0.5 * I;
 }
 
 //-----------------------------------------------------------------------------
