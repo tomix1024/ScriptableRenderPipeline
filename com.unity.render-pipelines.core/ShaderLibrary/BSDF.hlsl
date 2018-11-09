@@ -484,6 +484,26 @@ real3 EvalSensitivity(real opd, real shift)
     return xyz / 1.0685e-7;
 }
 
+TEXTURE2D_ARRAY(_IridescenceSensitivityMap);
+SAMPLER(sampler_IridescenceSensitivityMap);
+real4 _IridescenceSensitivityMap_ST;
+
+real3 EvalSensitivityTable(real opd, real phi)
+{
+    real3 result;
+    real2 uv = TRANSFORM_TEX(real2(opd, 0.5), _IridescenceSensitivityMap);
+    for (int index = 0; index < 3; ++index)
+    {
+        real2 magsqrt_phase = SAMPLE_TEXTURE2D_ARRAY_LOD(_IridescenceSensitivityMap, sampler_IridescenceSensitivityMap, uv, index, 0).rg;
+        real mag = Sq(magsqrt_phase.r);
+        real phase = magsqrt_phase.g;
+        result[index] = mag * cos(phase - phi);
+        ///   cos(phase - phi)
+        /// = cos(phase) * cos(phi) + sin(phase) * sin(phi)
+    }
+    return result;
+}
+
 // Evaluate the reflectance for a thin-film layer on top of a dielectric medum.
 real3 EvalIridescence(real eta_1, real cosTheta1, real iridescenceThickness, real3 baseLayerFresnel0, real iorOverBaseLayer = 0.0)
 {
@@ -620,11 +640,11 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real eta2, real layerThi
     for (int m = 1; m <= 2; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivity(m * OPD, m * phi);
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi);
         I += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivity(m * OPD, m * phi);
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi);
         I += Cms * Sms;
     }
 
@@ -632,6 +652,9 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real eta2, real layerThi
     //I = clamp(mul(I, XYZ_TO_RGB), real3(0.0, 0.0, 0.0), real3(1.0, 1.0, 1.0));
     //I = mul(XYZ_TO_RGB, I);
 
+    I = max(I, float3(0,0,0));
+
+    // TODO why do some directions return black values here!?
     return 0.5 * I;
 }
 
