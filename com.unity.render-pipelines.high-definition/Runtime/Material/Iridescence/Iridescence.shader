@@ -10,6 +10,10 @@ Shader "HDRenderPipeline/Iridescence"
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 1.0
         _Fresnel0("Fresnel0 for IBL", Color) = (1,1,1,1)
 
+        _ReferenceUseBetterIblR("Better IblR", Range(0.0, 1.0)) = 1.0
+        _ReferenceUseCorrectOPD("Correct OPD", Range(0.0, 1.0)) = 1.0
+        _ReferenceUseCorrectCoeffs("Correct Coeffs", Range(0.0, 1.0)) = 1.0
+
         // _NormalMap("NormalMap", 2D) = "bump" {}     // Tangent space normal map
         // _NormalScale("_NormalScale", Range(0.0, 8.0)) = 1
 

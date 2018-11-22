@@ -584,6 +584,84 @@ real3 EvalIridescence(real eta_1, real cosTheta1, real iridescenceThickness, rea
     return I;
 }
 
+void EvalOpticalPathDifference(real eta1, real cosTheta1, real eta2, real layerThickness, out real OPD, out real phi)
+{
+    // layerThickness unit is micrometer for this equation here. Mean 0.5 is 500nm.
+    real Dinc = 3.0 * layerThickness;
+
+    real sinTheta2 = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
+    real cosTheta2 = sqrt(1.0 - sinTheta2);
+
+    // Phase shift
+    OPD = Dinc * cosTheta2;
+
+    // TODO compute correct phi!!
+    phi = PI;
+}
+
+real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real eta2, real3 eta3, real3 kappa3, real OPD, real phi)
+{
+    // Following line from original code is not needed for us, it create a discontinuity
+    // Force eta_2 -> eta_1 when Dinc -> 0.0
+    // real eta_2 = lerp(eta_1, eta_2, smoothstep(0.0, 0.03, Dinc));
+    // Evaluate the cosTheta on the base layer (Snell law)
+    real sinTheta2 = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
+
+    // Handle TIR
+    if (sinTheta2 > 1.0)
+        return real3(1.0, 1.0, 1.0);
+    //Or use this "artistic hack" to get more continuity even though wrong (test with dual normal maps to understand the difference)
+    //if( sinTheta2 > 1.0 ) { sinTheta2 = 2 - sinTheta2; }
+
+    real cosTheta2 = sqrt(1.0 - sinTheta2);
+
+    // First interface
+    real3 R12p, R12s;
+    F_FresnelConductor(eta2/eta1, 0, cosTheta1, R12p, R12s);
+    real3 T12p = 1.0 - R12p;
+    real3 T12s = 1.0 - R12s;
+
+    // Second interface
+    real3 R23p, R23s;
+    F_FresnelConductor(eta3/eta2, kappa3/eta2, cosTheta2, R23p, R23s);
+
+    // Compound terms
+    real3 R123p = R12p * R23p;
+    real3 r123p = sqrt(R123p);
+    real3 Rstarp = Sq(T12p) * R23p / (real3(1.0, 1.0, 1.0) - R123p);
+    real3 R123s = R12s * R23s;
+    real3 r123s = sqrt(R123s);
+    real3 Rstars = Sq(T12s) * R23s / (real3(1.0, 1.0, 1.0) - R123s);
+
+    // Reflectance term for m = 0 (DC term amplitude)
+    real3 C0p = R12p + Rstarp;
+    real3 C0s = R12s + Rstars;
+    real3 I = C0p + C0s;
+
+    // Reflectance term for m > 0 (pairs of diracs)
+    real3 Cmp = Rstarp - T12p;
+    real3 Cms = Rstars - T12s;
+    for (int m = 1; m <= 2; ++m)
+    {
+        Cmp *= r123p;
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi);
+        I += Cmp * Smp;
+
+        Cms *= r123s;
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi);
+        I += Cms * Sms;
+    }
+
+    // Convert back to RGB reflectance
+    //I = clamp(mul(I, XYZ_TO_RGB), real3(0.0, 0.0, 0.0), real3(1.0, 1.0, 1.0));
+    //I = mul(XYZ_TO_RGB, I);
+
+    I = max(I, float3(0,0,0));
+
+    // TODO why do some directions return black values here!?
+    return 0.5 * I;
+}
+
 // Evaluate the reflectance for a thin-film layer on top of a conducting medum.
 real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real eta2, real layerThickness, real3 eta3, real3 kappa3)
 {
