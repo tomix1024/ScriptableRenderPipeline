@@ -14,7 +14,9 @@
 // Choose between Lambert diffuse and Disney diffuse (enable only one of them)
 // #define USE_DIFFUSE_LAMBERT_BRDF
 
+#ifndef IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
 #define LIT_USE_GGX_ENERGY_COMPENSATION
+#endif // IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
 
 // Enable reference mode for IBL and area lights
 // Both reference define below can be define only if LightLoop is present, else we get a compile error

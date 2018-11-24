@@ -13,6 +13,15 @@ Shader "HDRenderPipeline/Iridescence"
         _ReferenceUseBetterIblR("Better IblR", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectOPD("Correct OPD", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectCoeffs("Correct Coeffs", Range(0.0, 1.0)) = 1.0
+        _ReferenceUseMeanVdotH("Mean VdotH", Range(0.0, 1.0)) = 0.0
+        _ReferenceUseVdotHWeightWithLight("Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
+
+        _MeanScale("Mean Scale", Float) = 1.0
+        _MeanOffset("Mean Offset", Float) = 0.0
+        _DevScale("Dev Scale", Float) = 1.0
+        _DevOffset("Dev Offset", Float) = 0.0
+
+        [Toggle(IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR)]_IridescenceReferenceVdotHMeanVar("Show VdotH Mean/Var", Float) = 0
 
         // _NormalMap("NormalMap", 2D) = "bump" {}     // Tangent space normal map
         // _NormalScale("_NormalScale", Range(0.0, 8.0)) = 1
@@ -80,6 +89,7 @@ Shader "HDRenderPipeline/Iridescence"
     #pragma multi_compile_instancing
 
     #pragma multi_compile _ IRIDESCENCE_DISPLAY_REFERENCE_IBL_16 IRIDESCENCE_DISPLAY_REFERENCE_IBL_256 IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048 IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K
+    #pragma multi_compile _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
 
     //-------------------------------------------------------------------------------------
     // Define
