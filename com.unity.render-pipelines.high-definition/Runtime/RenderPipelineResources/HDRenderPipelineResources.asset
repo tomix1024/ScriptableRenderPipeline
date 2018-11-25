@@ -84,6 +84,8 @@ MonoBehaviour:
       type: 3}
     preIntegratedFGD_CookTorrancePS: {fileID: 4800000, guid: a6402c19b020b4a4fb7073aaa2e26aba,
       type: 3}
+    preIntegratedVdotH_GGXPS: {fileID: 4800000, guid: 94dcf2f55f36f3b5fa119e0b4d059259,
+      type: 3}
     encodeBC6HCS: {fileID: 7200000, guid: aa922d239de60304f964e24488559eeb, type: 3}
     cubeToPanoPS: {fileID: 4800000, guid: 595434cc3b6405246b6cd3086d0b6f7d, type: 3}
     blitCubeTextureFacePS: {fileID: 4800000, guid: d850d0a2481878d4bbf17e5126b04163,
@@ -106,10 +108,3 @@ MonoBehaviour:
     defaultTerrainMat: {fileID: 2100000, guid: 22ff8771d87ef27429e670136399094b, type: 2}
   textures:
     debugFontTex: {fileID: 2800000, guid: a3ad2df0e49aaa341a3b3a80f93b3f66, type: 3}
-  shaderGraphs:
-    autodeskInteractiveSG: {fileID: 4800000, guid: 7252379db4c18b641b517f2c91bb57e1,
-      type: 3}
-    autodeskInteractiveTransparentSG: {fileID: 4800000, guid: ee2ce0be66f45d9449d71ba9b49c2acd,
-      type: 3}
-    autodeskInteractiveMaskedSG: {fileID: 4800000, guid: 29c4adff654862b40a2e9fb2015a42c3,
-      type: 3}

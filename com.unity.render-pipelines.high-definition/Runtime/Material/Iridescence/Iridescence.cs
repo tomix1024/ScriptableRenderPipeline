@@ -81,23 +81,27 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public override void Build(HDRenderPipelineAsset hdAsset)
         {
             PreIntegratedFGD.instance.Build(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
+            PreIntegratedVdotH.instance.Build();
             LTCAreaLight.instance.Build();
         }
 
         public override void Cleanup()
         {
             PreIntegratedFGD.instance.Cleanup(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
+            PreIntegratedVdotH.instance.Cleanup();
             LTCAreaLight.instance.Cleanup();
         }
 
         public override void RenderInit(CommandBuffer cmd)
         {
             PreIntegratedFGD.instance.RenderInit(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse, cmd);
+            PreIntegratedVdotH.instance.RenderInit(cmd);
         }
 
         public override void Bind()
         {
             PreIntegratedFGD.instance.Bind(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
+            PreIntegratedVdotH.instance.Bind();
             LTCAreaLight.instance.Bind();
         }
     }

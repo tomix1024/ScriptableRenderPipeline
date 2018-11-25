@@ -401,6 +401,44 @@ real4 IntegrateGGXAndDisneyDiffuseFGD(real NdotV, real roughness, uint sampleCou
 #define IntegrateGGXAndDisneyDiffuseFGD ERROR_ON_UNSUPPORTED_FUNCTION(IntegrateGGXAndDisneyDiffuseFGD)
 #endif
 
+real4 IntegrateGGXVdotH(real NdotV, real roughness, uint sampleCount = 4096)
+{
+    // Note that our LUT covers the full [0, 1] range.
+    // Therefore, we don't really want to clamp NdotV here (else the lerp slope is wrong).
+    // However, if NdotV is 0, the integral is 0, so that's not what we want, either.
+    // Our runtime NdotV bias is quite large, so we use a smaller one here instead.
+    NdotV     = max(NdotV, FLT_EPS);
+    real3 V   = real3(sqrt(1 - NdotV * NdotV), 0, NdotV);
+    real4 acc = real4(0.0, 0.0, 0.0, 0.0);
+
+    real3x3 localToWorld = k_identity3x3;
+
+    for (uint i = 0; i < sampleCount; ++i)
+    {
+        real2 u = Hammersley2d(i, sampleCount);
+
+        real VdotH;
+        real NdotL;
+        real weightOverPdf;
+
+        real3 L; // Unused
+        ImportanceSampleGGX(u, V, localToWorld, roughness, NdotV,
+                            L, VdotH, NdotL, weightOverPdf);
+
+        if (NdotL > 0.0)
+        {
+            acc.x += weightOverPdf;
+            acc.y += weightOverPdf * VdotH;
+            acc.z += weightOverPdf * VdotH * VdotH;
+            acc.w += weightOverPdf * VdotH * VdotH * VdotH;
+        }
+    }
+
+    acc /= acc.x;
+
+    return acc;
+}
+
 uint GetIBLRuntimeFilterSampleCount(uint mipLevel)
 {
     uint sampleCount = 0;

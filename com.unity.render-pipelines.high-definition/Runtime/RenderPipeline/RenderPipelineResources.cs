@@ -81,6 +81,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             public Shader preIntegratedFGD_CharlieFabricLambertPS;
             public Shader preIntegratedFGD_WardPS;
             public Shader preIntegratedFGD_CookTorrancePS;
+            public Shader preIntegratedVdotH_GGXPS;
 
             // Utilities / Core
             public ComputeShader encodeBC6HCS;
@@ -217,6 +218,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 preIntegratedFGD_CharlieFabricLambertPS = Load<Shader>(HDRenderPipelinePath + "Material/PreIntegratedFGD/PreIntegratedFGD_CharlieFabricLambert.shader"),
                 preIntegratedFGD_CookTorrancePS = Load<Shader>(HDRenderPipelinePath + "Material/AxF/PreIntegratedFGD_CookTorrance.shader"),
                 preIntegratedFGD_WardPS = Load<Shader>(HDRenderPipelinePath + "Material/AxF/PreIntegratedFGD_Ward.shader"),
+
+                preIntegratedVdotH_GGXPS = Load<Shader>(HDRenderPipelinePath + "Material/PreIntegratedVdotH/preIntegratedVdotH_GGX.shader"),
 
                 // Utilities / Core
                 encodeBC6HCS = Load<ComputeShader>(CorePath + "CoreResources/EncodeBC6H.compute"),
