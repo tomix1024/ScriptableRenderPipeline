@@ -39,6 +39,7 @@ float _ReferenceUseBetterIblR;
 float _ReferenceUseCorrectOPD;
 float _ReferenceUseCorrectCoeffs;
 float _ReferenceUseMeanVdotH;
+float _ReferenceUseVarVdotH;
 float _ReferenceUseVdotHWeightWithLight;
 float _IBLUsePreIntegratedFGD;
 float _IBLUseFresnel0Iridescence;

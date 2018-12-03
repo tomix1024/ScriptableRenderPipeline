@@ -681,7 +681,7 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     //if( sinTheta2sq > 1.0 ) { sinTheta2sq = 2 - sinTheta2sq; }
 
     real cosTheta2 = sqrt(1.0 - sinTheta2sq);
-    real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1)); // cf. EKF
+    real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1))); // cf. EKF
 
     // First interface
     real3 R12p, R12s;
