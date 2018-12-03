@@ -32,4 +32,21 @@ float _IridescenceKappa3;
 int _ObjectId;
 int _PassValue;
 
+
+
+
+float _ReferenceUseBetterIblR;
+float _ReferenceUseCorrectOPD;
+float _ReferenceUseCorrectCoeffs;
+float _ReferenceUseMeanVdotH;
+float _ReferenceUseVdotHWeightWithLight;
+float _IBLUsePreIntegratedFGD;
+float _IBLUseFresnel0Iridescence;
+
+float _MeanScale;
+float _MeanOffset;
+float _DevScale;
+float _DevOffset;
+
+
 CBUFFER_END

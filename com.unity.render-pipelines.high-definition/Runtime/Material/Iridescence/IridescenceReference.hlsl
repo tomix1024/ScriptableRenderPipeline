@@ -1,13 +1,3 @@
-float _ReferenceUseBetterIblR;
-float _ReferenceUseCorrectOPD;
-float _ReferenceUseCorrectCoeffs;
-float _ReferenceUseMeanVdotH;
-float _ReferenceUseVdotHWeightWithLight;
-
-float _MeanScale;
-float _MeanOffset;
-float _DevScale;
-float _DevOffset;
 
 // Ref: Moving Frostbite to PBR (Appendix A)
 float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,

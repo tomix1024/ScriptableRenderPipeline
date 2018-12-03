@@ -488,10 +488,10 @@ TEXTURE2D_ARRAY(_IridescenceSensitivityMap);
 SAMPLER(sampler_IridescenceSensitivityMap);
 real4 _IridescenceSensitivityMap_ST;
 
-real3 EvalSensitivityTable(real opd, real phi)
+real3 EvalSensitivityTable(real opd, real phi, real opdSigma = 0)
 {
     real3 result;
-    real2 uv = TRANSFORM_TEX(real2(opd, 0.5), _IridescenceSensitivityMap);
+    real2 uv = TRANSFORM_TEX(real2(opd, opdSigma), _IridescenceSensitivityMap);
     for (int index = 0; index < 3; ++index)
     {
         real2 magsqrt_phase = SAMPLE_TEXTURE2D_ARRAY_LOD(_IridescenceSensitivityMap, sampler_IridescenceSensitivityMap, uv, index, 0).rg;
@@ -663,7 +663,7 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real eta2, real3 eta3
 }
 
 // Evaluate the reflectance for a thin-film layer on top of a conducting medum.
-real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real eta2, real layerThickness, real3 eta3, real3 kappa3)
+real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, real3 eta3, real3 kappa3)
 {
     // layerThickness unit is micrometer for this equation here. Mean 0.5 is 500nm.
     real Dinc = 3.0 * layerThickness;
@@ -672,15 +672,16 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real eta2, real layerThi
     // Force eta_2 -> eta_1 when Dinc -> 0.0
     // real eta_2 = lerp(eta_1, eta_2, smoothstep(0.0, 0.03, Dinc));
     // Evaluate the cosTheta on the base layer (Snell law)
-    real sinTheta2 = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
+    real sinTheta2sq = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
 
     // Handle TIR
-    if (sinTheta2 > 1.0)
+    if (sinTheta2sq > 1.0)
         return real3(1.0, 1.0, 1.0);
     //Or use this "artistic hack" to get more continuity even though wrong (test with dual normal maps to understand the difference)
-    //if( sinTheta2 > 1.0 ) { sinTheta2 = 2 - sinTheta2; }
+    //if( sinTheta2sq > 1.0 ) { sinTheta2sq = 2 - sinTheta2sq; }
 
-    real cosTheta2 = sqrt(1.0 - sinTheta2);
+    real cosTheta2 = sqrt(1.0 - sinTheta2sq);
+    real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1)); // cf. EKF
 
     // First interface
     real3 R12p, R12s;
@@ -697,6 +698,7 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real eta2, real layerThi
 
     // Phase shift
     real OPD = Dinc * cosTheta2;
+    real OPDSigma = Dinc * sqrt(cosTheta2Var); // cf. Kalman filter
     real phi = phi21 + phi23;
 
     // Compound terms
@@ -718,11 +720,11 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real eta2, real layerThi
     for (int m = 1; m <= 2; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi);
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
         I += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi);
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
         I += Cms * Sms;
     }
 

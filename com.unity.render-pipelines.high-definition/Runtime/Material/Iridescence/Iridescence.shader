@@ -15,6 +15,8 @@ Shader "HDRenderPipeline/Iridescence"
         _ReferenceUseCorrectCoeffs("Correct Coeffs", Range(0.0, 1.0)) = 1.0
         _ReferenceUseMeanVdotH("Mean VdotH", Range(0.0, 1.0)) = 0.0
         _ReferenceUseVdotHWeightWithLight("Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
+        _IBLUsePreIntegratedFGD("Preintegrated FGD", Range(0.0, 1.0)) = 1.0
+        _IBLUseFresnel0Iridescence("Iridescence as Fresnel0", Range(0.0, 1.0)) = 0.0
 
         _MeanScale("Mean Scale", Float) = 1.0
         _MeanOffset("Mean Offset", Float) = 0.0

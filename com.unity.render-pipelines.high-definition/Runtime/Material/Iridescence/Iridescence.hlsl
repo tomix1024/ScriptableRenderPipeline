@@ -236,19 +236,32 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
     // Handle IBL + area light + multiscattering.
     // Note: use the not modified by anisotropy iblPerceptualRoughness here.
-    float specularReflectivity;
-    GetPreIntegratedFGDGGXAndDisneyDiffuse(NdotV, preLightData.iblPerceptualRoughness, bsdfData.fresnel0, preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);
 
+    float3 iridescenceFGD;
     {
-        float viewAngle = NdotV; // NOTE: THIS IS NOT GENERALLY THE CASE!
+        float4 VdotH_moments;
+        GetPreIntegratedVdotHGGX(NdotV, bsdfData.perceptualRoughness, VdotH_moments);
+
+        float VdotH_mean = VdotH_moments.y;
+        float VdotH_var = VdotH_moments.z - VdotH_mean * VdotH_mean;
+
+
+        float viewAngle = lerp(NdotV, VdotH_mean, _ReferenceUseMeanVdotH); // NOTE: THIS IS NOT GENERALLY THE CASE!
+        float viewAngleVar = lerp(0, VdotH_var, _ReferenceUseVarVdotH);
         float thickness = bsdfData.iridescenceThickness;
         float eta1 = 1.0; // Default is air
         float eta2 = bsdfData.iridescenceEta2;
         float3 eta3 = bsdfData.iridescenceEta3;
         float3 kappa3 = bsdfData.iridescenceKappa3;
 
-        preLightData.specularFGD *= EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
+        iridescenceFGD = EvalIridescenceCorrect(eta1, viewAngle, viewAngleVar, eta2, thickness, eta3, kappa3);
     }
+
+    float specularReflectivity;
+    GetPreIntegratedFGDGGXAndDisneyDiffuse(NdotV, preLightData.iblPerceptualRoughness, lerp(bsdfData.fresnel0, iridescenceFGD, _IBLUseFresnel0Iridescence), preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);
+    preLightData.specularFGD *= lerp(iridescenceFGD, float3(1,1,1), _IBLUseFresnel0Iridescence);
+    preLightData.specularFGD = lerp(iridescenceFGD, preLightData.specularFGD, _IBLUsePreIntegratedFGD);
+
 #ifdef USE_DIFFUSE_LAMBERT_BRDF
     preLightData.diffuseFGD = 1.0;
 #endif
@@ -376,7 +389,7 @@ void BSDF(  float3 V, float3 L, float NdotL, float3 positionWS, PreLightData pre
         float3 eta3 = bsdfData.iridescenceEta3;
         float3 kappa3 = bsdfData.iridescenceKappa3;
 
-        F = EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
+        F = EvalIridescenceCorrect(eta1, viewAngle, 0, eta2, thickness, eta3, kappa3);
     }
 
     float DV = DV_SmithJointGGX(NdotH, NdotL, NdotV, bsdfData.roughness, preLightData.partLambdaV);
