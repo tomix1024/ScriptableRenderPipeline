@@ -44,7 +44,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 int res  = (int)VdotHTexture.Resolution;
 
                 m_PreIntegratedVdotHMaterial = CoreUtils.CreateEngineMaterial(hdrp.renderPipelineResources.shaders.preIntegratedVdotH_GGXPS);
-                m_PreIntegratedVdotH = new RenderTexture(res, res, 0, RenderTextureFormat.ARGB2101010, RenderTextureReadWrite.Linear);
+                m_PreIntegratedVdotH = new RenderTexture(res, res, 0, RenderTextureFormat.ARGBFloat/*ARGB2101010*/, RenderTextureReadWrite.Linear);
                 m_PreIntegratedVdotH.hideFlags = HideFlags.HideAndDontSave;
                 m_PreIntegratedVdotH.filterMode = FilterMode.Bilinear;
                 m_PreIntegratedVdotH.wrapMode = TextureWrapMode.Clamp;
@@ -89,7 +89,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public void Bind()
         {
-            Shader.SetGlobalTexture(HDShaderIDs._PreIntegratedVdotH, m_PreIntegratedVdotH);
+            Shader.SetGlobalTexture(HDShaderIDs._PreIntegratedVdotH_GGX, m_PreIntegratedVdotH);
         }
     }
 }
