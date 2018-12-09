@@ -584,22 +584,24 @@ real3 EvalIridescence(real eta_1, real cosTheta1, real iridescenceThickness, rea
     return I;
 }
 
-void EvalOpticalPathDifference(real eta1, real cosTheta1, real eta2, real layerThickness, out real OPD, out real phi)
+void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, out real OPD, out real OPDSigma, out real phi)
 {
     // layerThickness unit is micrometer for this equation here. Mean 0.5 is 500nm.
     real Dinc = 3.0 * layerThickness;
 
     real sinTheta2 = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
     real cosTheta2 = sqrt(1.0 - sinTheta2);
+    real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1))); // cf. EKF
 
     // Phase shift
     OPD = Dinc * cosTheta2;
+    OPDSigma = Dinc * sqrt(cosTheta2Var);
 
     // TODO compute correct phi!!
     phi = PI;
 }
 
-real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real eta2, real3 eta3, real3 kappa3, real OPD, real phi)
+real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, real OPD, real OPDSigma, real phi)
 {
     // Following line from original code is not needed for us, it create a discontinuity
     // Force eta_2 -> eta_1 when Dinc -> 0.0
@@ -644,11 +646,11 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real eta2, real3 eta3
     for (int m = 1; m <= 2; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi);
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
         I += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi);
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
         I += Cms * Sms;
     }
 

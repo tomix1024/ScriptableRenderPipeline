@@ -60,9 +60,9 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
             float viewAngleCoeffs = lerp(VdotRH, VdotH, _ReferenceUseCorrectCoeffs);
 
             // float3 F = EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
-            float OPD, phi;
-            EvalOpticalPathDifference(eta1, viewAngleOPD, eta2, thickness, OPD, phi);
-            float3 F = EvalIridescenceCorrectOPD(eta1, viewAngleCoeffs, eta2, eta3, kappa3, OPD, phi);
+            float OPD, OPDSigma, phi;
+            EvalOpticalPathDifference(eta1, viewAngleOPD, 0, eta2, thickness, OPD, OPDSigma, phi);
+            float3 F = EvalIridescenceCorrectOPD(eta1, viewAngleCoeffs, 0, eta2, eta3, kappa3, OPD, OPDSigma, phi);
 
             float3 FweightOverPdf = F * weightOverPdf;
 
@@ -91,6 +91,7 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
     {
         // Fresnel component is apply here as describe in ImportanceSampleGGX function
         float viewAngle = VdotH_mean;
+        float viewAngleVar = VdotH_var * _ReferenceUseVarVdotH;
         float thickness = bsdfData.iridescenceThickness;
         float eta1 = 1.0; // Default is air
         float eta2 = bsdfData.iridescenceEta2;
@@ -98,9 +99,9 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
         float3 kappa3 = bsdfData.iridescenceKappa3;
 
         // float3 F = EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
-        float OPD, phi;
-        EvalOpticalPathDifference(eta1, viewAngle, eta2, thickness, OPD, phi);
-        float3 F = EvalIridescenceCorrectOPD(eta1, viewAngle, eta2, eta3, kappa3, OPD, phi);
+        float OPD, OPDSigma, phi;
+        EvalOpticalPathDifference(eta1, viewAngle, viewAngleVar, eta2, thickness, OPD, OPDSigma, phi);
+        float3 F = EvalIridescenceCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma, phi);
 
         result = lerp(result, F * accWithoutF / sampleCount, _ReferenceUseMeanVdotH);
     }
