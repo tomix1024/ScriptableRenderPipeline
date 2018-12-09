@@ -85,7 +85,7 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
     float VdotH_var = accVdotH2 / accVdotH0 - VdotH_mean * VdotH_mean;
 
 #ifdef IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
-    return SRGBToLinear(float3(VdotH_mean*_MeanScale + _MeanOffset, sqrt(VdotH_var)*_DevScale + _DevOffset, 0));
+    return SRGBToLinear(float3(VdotH_mean*_ReferenceDebugMeanScale + _ReferenceDebugMeanOffset, sqrt(VdotH_var)*_ReferenceDebugDevScale + _ReferenceDebugDevOffset, 0));
 #endif // IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
 
     {

@@ -41,13 +41,16 @@ float _ReferenceUseCorrectCoeffs;
 float _ReferenceUseMeanVdotH;
 float _ReferenceUseVarVdotH;
 float _ReferenceUseVdotHWeightWithLight;
+
+float _IBLUseMeanVdotH;
+float _IBLUseVarVdotH;
 float _IBLUsePreIntegratedFGD;
 float _IBLUseFresnel0Iridescence;
 
-float _MeanScale;
-float _MeanOffset;
-float _DevScale;
-float _DevOffset;
+float _ReferenceDebugMeanScale;
+float _ReferenceDebugMeanOffset;
+float _ReferenceDebugDevScale;
+float _ReferenceDebugDevOffset;
 
 
 CBUFFER_END

@@ -14,9 +14,9 @@
 // Choose between Lambert diffuse and Disney diffuse (enable only one of them)
 // #define USE_DIFFUSE_LAMBERT_BRDF
 
-#ifndef IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
-#define LIT_USE_GGX_ENERGY_COMPENSATION
-#endif // IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
+//#ifndef IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
+//#define LIT_USE_GGX_ENERGY_COMPENSATION
+//#endif // IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
 
 // Enable reference mode for IBL and area lights
 // Both reference define below can be define only if LightLoop is present, else we get a compile error
@@ -246,8 +246,8 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float VdotH_var = VdotH_moments.z - VdotH_mean * VdotH_mean;
 
 
-        float viewAngle = lerp(NdotV, VdotH_mean, _ReferenceUseMeanVdotH); // NOTE: THIS IS NOT GENERALLY THE CASE!
-        float viewAngleVar = lerp(0, VdotH_var, _ReferenceUseVarVdotH);
+        float viewAngle = lerp(NdotV, VdotH_mean, _IBLUseMeanVdotH); // NOTE: THIS IS NOT GENERALLY THE CASE!
+        float viewAngleVar = lerp(0, VdotH_var, _IBLUseVarVdotH);
         float thickness = bsdfData.iridescenceThickness;
         float eta1 = 1.0; // Default is air
         float eta2 = bsdfData.iridescenceEta2;

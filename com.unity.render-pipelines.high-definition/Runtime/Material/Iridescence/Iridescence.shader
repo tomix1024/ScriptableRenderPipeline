@@ -10,21 +10,26 @@ Shader "HDRenderPipeline/Iridescence"
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 1.0
         _Fresnel0("Fresnel0 for IBL", Color) = (1,1,1,1)
 
-        _ReferenceUseBetterIblR("Better IblR", Range(0.0, 1.0)) = 1.0
-        _ReferenceUseCorrectOPD("Correct OPD", Range(0.0, 1.0)) = 1.0
-        _ReferenceUseCorrectCoeffs("Correct Coeffs", Range(0.0, 1.0)) = 1.0
-        _ReferenceUseMeanVdotH("Mean VdotH", Range(0.0, 1.0)) = 0.0
-        _ReferenceUseVarVdotH("Var VdotH", Range(0.0, 1.0)) = 0.0
-        _ReferenceUseVdotHWeightWithLight("Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
-        _IBLUsePreIntegratedFGD("Preintegrated FGD", Range(0.0, 1.0)) = 1.0
-        _IBLUseFresnel0Iridescence("Iridescence as Fresnel0", Range(0.0, 1.0)) = 0.0
+        _IBLUseMeanVdotH("IBL Mean VdotH", Range(0.0, 1.0)) = 0.0
+        _IBLUseVarVdotH("IBL Var VdotH", Range(0.0, 1.0)) = 0.0
+        _IBLUsePreIntegratedFGD("IBL Preintegrated FGD", Range(0.0, 1.0)) = 1.0
+        _IBLUseFresnel0Iridescence("IBL Iridescence as Fresnel0", Range(0.0, 1.0)) = 0.0
 
-        _MeanScale("Mean Scale", Float) = 1.0
-        _MeanOffset("Mean Offset", Float) = 0.0
-        _DevScale("Dev Scale", Float) = 1.0
-        _DevOffset("Dev Offset", Float) = 0.0
+        _ReferenceUseBetterIblR("Ref Better IblR", Range(0.0, 1.0)) = 1.0
+        _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
+        _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0
+        _ReferenceUseMeanVdotH("Ref Mean VdotH", Range(0.0, 1.0)) = 0.0
+        _ReferenceUseVarVdotH("Ref Var VdotH", Range(0.0, 1.0)) = 0.0
+        _ReferenceUseVdotHWeightWithLight("Ref Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
+
+        _ReferenceDebugMeanScale("Ref Debug Mean Scale", Float) = 1.0
+        _ReferenceDebugMeanOffset("Ref Debug Mean Offset", Float) = 0.0
+        _ReferenceDebugDevScale("Ref Debug Dev Scale", Float) = 1.0
+        _ReferenceDebugDevOffset("Ref Debug Dev Offset", Float) = 0.0
 
         [Toggle(IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR)]_IridescenceReferenceVdotHMeanVar("Show VdotH Mean/Var", Float) = 0
+
+        [Toggle(LIT_USE_GGX_ENERGY_COMPENSATION)]_UseGGXEnergyCompensation("Use GGX Energy Compensation", Float) = 1
 
         // _NormalMap("NormalMap", 2D) = "bump" {}     // Tangent space normal map
         // _NormalScale("_NormalScale", Range(0.0, 8.0)) = 1
@@ -81,6 +86,8 @@ Shader "HDRenderPipeline/Iridescence"
 
     #pragma shader_feature _ALPHATEST_ON
     #pragma shader_feature _DOUBLESIDED_ON
+
+    #pragma shader_feature LIT_USE_GGX_ENERGY_COMPENSATION
 
     // Keyword for transparent
     #pragma shader_feature _SURFACE_TYPE_TRANSPARENT
