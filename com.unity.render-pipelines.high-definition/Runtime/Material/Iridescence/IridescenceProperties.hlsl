@@ -47,6 +47,9 @@ float _IBLUseVarVdotH;
 float _IBLUsePreIntegratedFGD;
 float _IBLUseFresnel0Iridescence;
 
+float _IridescenceUseUKF;
+float _IridescenceUKFLambda;
+
 float _ReferenceDebugMeanScale;
 float _ReferenceDebugMeanOffset;
 float _ReferenceDebugDevScale;

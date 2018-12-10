@@ -22,6 +22,9 @@ Shader "HDRenderPipeline/Iridescence"
         _ReferenceUseVarVdotH("Ref Var VdotH", Range(0.0, 1.0)) = 0.0
         _ReferenceUseVdotHWeightWithLight("Ref Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
 
+        _IridescenceUseUKF("Use UKF", Range(0.0, 1.0)) = 0.0
+        _IridescenceUKFLambda("UKF Lambda", Range(0.0, 2.0)) = 1.0
+
         _ReferenceDebugMeanScale("Ref Debug Mean Scale", Float) = 1.0
         _ReferenceDebugMeanOffset("Ref Debug Mean Offset", Float) = 0.0
         _ReferenceDebugDevScale("Ref Debug Dev Scale", Float) = 1.0

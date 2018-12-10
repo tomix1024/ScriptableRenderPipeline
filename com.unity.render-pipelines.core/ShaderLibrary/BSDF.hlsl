@@ -665,7 +665,7 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
 }
 
 // Evaluate the reflectance for a thin-film layer on top of a conducting medum.
-real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, real3 eta3, real3 kappa3)
+real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, real3 eta3, real3 kappa3, real use_ukf, real ukf_lambda)
 {
     // layerThickness unit is micrometer for this equation here. Mean 0.5 is 500nm.
     real Dinc = 3.0 * layerThickness;
@@ -684,6 +684,16 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
 
     real cosTheta2 = sqrt(1.0 - sinTheta2sq);
     real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1))); // cf. EKF
+
+    real3 sigmaWeights = real3(0.5, ukf_lambda, 0.5) / (1 + ukf_lambda);
+    real3 sigmaPoints = cosTheta1.xxx + sqrt((1 + ukf_lambda) * cosTheta1Var) * real3(-1, 0, 1); // cosTheta1
+    real3 sigmaPointsBelow = sqrt(1.0 - Sq(eta1 / eta2) * (1.0 - Sq(sigmaPoints)));
+
+    real cosTheta2UKF = dot(sigmaWeights, sigmaPointsBelow);
+    real cosTheta2VarUKF = dot(sigmaWeights, Sq(sigmaPointsBelow - cosTheta2UKF));
+
+    cosTheta2 = lerp(cosTheta2, cosTheta2UKF, use_ukf);
+    cosTheta2Var = lerp(cosTheta2Var, cosTheta2VarUKF, use_ukf);
 
     // First interface
     real3 R12p, R12s;

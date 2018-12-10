@@ -254,7 +254,7 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float3 eta3 = bsdfData.iridescenceEta3;
         float3 kappa3 = bsdfData.iridescenceKappa3;
 
-        iridescenceFGD = EvalIridescenceCorrect(eta1, viewAngle, viewAngleVar, eta2, thickness, eta3, kappa3);
+        iridescenceFGD = EvalIridescenceCorrect(eta1, viewAngle, viewAngleVar, eta2, thickness, eta3, kappa3, _IridescenceUseUKF, _IridescenceUKFLambda);
     }
 
     float specularReflectivity;
@@ -389,7 +389,7 @@ void BSDF(  float3 V, float3 L, float NdotL, float3 positionWS, PreLightData pre
         float3 eta3 = bsdfData.iridescenceEta3;
         float3 kappa3 = bsdfData.iridescenceKappa3;
 
-        F = EvalIridescenceCorrect(eta1, viewAngle, 0, eta2, thickness, eta3, kappa3);
+        F = EvalIridescenceCorrect(eta1, viewAngle, 0, eta2, thickness, eta3, kappa3, 0, 0);
     }
 
     float DV = DV_SmithJointGGX(NdotH, NdotL, NdotV, bsdfData.roughness, preLightData.partLambdaV);
