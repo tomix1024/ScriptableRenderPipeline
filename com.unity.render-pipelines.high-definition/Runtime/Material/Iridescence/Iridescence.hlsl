@@ -243,7 +243,7 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         GetPreIntegratedVdotHGGX(NdotV, bsdfData.perceptualRoughness, VdotH_moments);
 
         float VdotH_mean = VdotH_moments.y;
-        float VdotH_var = VdotH_moments.z - VdotH_mean * VdotH_mean;
+        float VdotH_var = max(0, VdotH_moments.z - VdotH_mean * VdotH_mean);
 
 
         float viewAngle = lerp(NdotV, VdotH_mean, _IBLUseMeanVdotH); // NOTE: THIS IS NOT GENERALLY THE CASE!
