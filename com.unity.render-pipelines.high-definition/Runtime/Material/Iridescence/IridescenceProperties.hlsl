@@ -47,6 +47,10 @@ float _IBLUseVarVdotH;
 float _IBLUsePreIntegratedFGD;
 float _IBLUseFresnel0Iridescence;
 
+float _IBLUsePreIntegratedIblR;
+float _IBLUsePreIntegratedIblRoughness;
+
+
 float _IridescenceUseUKF;
 float _IridescenceUKFLambda;
 

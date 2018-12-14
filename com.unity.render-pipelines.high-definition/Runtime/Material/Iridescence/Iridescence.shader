@@ -10,6 +10,10 @@ Shader "HDRenderPipeline/Iridescence"
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 1.0
         _Fresnel0("Fresnel0 for IBL", Color) = (1,1,1,1)
 
+
+        _IBLUsePreIntegratedIblR("IBL Preintegrated R", Range(0.0, 1.0)) = 0.0
+        _IBLUsePreIntegratedIblRoughness("IBL Preintegrated Roughness", Range(0.0, 1.0)) = 0.0
+
         _IBLUseMeanVdotH("IBL Mean VdotH", Range(0.0, 1.0)) = 0.0
         _IBLUseVarVdotH("IBL Var VdotH", Range(0.0, 1.0)) = 0.0
         _IBLUsePreIntegratedFGD("IBL Preintegrated FGD", Range(0.0, 1.0)) = 1.0

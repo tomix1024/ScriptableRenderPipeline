@@ -36,6 +36,7 @@
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/LTCAreaLight/LTCAreaLight.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedVdotH/PreIntegratedVdotH.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedIblR/PreIntegratedIblR.hlsl"
 
 //-----------------------------------------------------------------------------
 // Definition
@@ -284,6 +285,16 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     iblN = N;
 
     preLightData.iblR = reflect(-V, iblN);
+
+
+    // Modify iblR and iblPerceptualRoughness
+
+    float3 tempIblR;
+    float  tempIblRoughness;
+    GetPreIntegratedIblR(NdotV, preLightData.iblPerceptualRoughness, bsdfData.normalWS, preLightData.iblR, tempIblR, tempIblRoughness);
+    preLightData.iblR = lerp(preLightData.iblR, tempIblR, _IBLUsePreIntegratedIblR);
+    preLightData.iblPerceptualRoughness = lerp(preLightData.iblPerceptualRoughness, RoughnessToPerceptualRoughness(tempIblRoughness), _IBLUsePreIntegratedIblRoughness);
+
 
     // Area light
     // UVs for sampling the LUTs
@@ -662,14 +673,16 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
     float3 R = preLightData.iblR;
 
     {
+        // TODO implement iblR here!
         if (!IsEnvIndexTexture2D(lightData.envIndex)) // ENVCACHETYPE_CUBEMAP
         {
-            R = GetSpecularDominantDir(bsdfData.normalWS, R, preLightData.iblPerceptualRoughness, ClampNdotV(preLightData.NdotV));
+            float3 Rnew = GetSpecularDominantDir(bsdfData.normalWS, R, preLightData.iblPerceptualRoughness, ClampNdotV(preLightData.NdotV));
             // When we are rough, we tend to see outward shifting of the reflection when at the boundary of the projection volume
             // Also it appear like more sharp. To avoid these artifact and at the same time get better match to reference we lerp to original unmodified reflection.
             // Formula is empirical.
             float roughness = PerceptualRoughnessToRoughness(preLightData.iblPerceptualRoughness);
-            R = lerp(R, preLightData.iblR, saturate(smoothstep(0, 1, roughness * roughness)));
+            float3 Rnew = lerp(Rnew, preLightData.iblR, saturate(smoothstep(0, 1, roughness * roughness)));
+            R = lerp(Rnew, R, _IBLUsePreIntegratedIblR);
         }
     }
 
