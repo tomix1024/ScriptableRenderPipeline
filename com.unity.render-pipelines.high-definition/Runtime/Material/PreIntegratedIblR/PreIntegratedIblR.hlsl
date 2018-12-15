@@ -7,7 +7,7 @@ TEXTURE2D(_PreIntegratedIblR);
 void GetPreIntegratedIblR(float thetaV, float perceptualRoughness, out float iblThetaR, out float iblRoughness)
 {
     // We want the LUT to contain the entire [0, 1] range, without losing half a texel at each side.
-    float2 coordLUT = Remap01ToHalfTexelCoord(float2(thetaV, perceptualRoughness), IBLRTEXTURE_RESOLUTION);
+    float2 coordLUT = Remap01ToHalfTexelCoord(float2(thetaV* INV_HALF_PI, perceptualRoughness), IBLRTEXTURE_RESOLUTION);
 
     float4 val = SAMPLE_TEXTURE2D_LOD(_PreIntegratedIblR, s_linear_clamp_sampler, coordLUT, 0);
     iblThetaR = val.x;
