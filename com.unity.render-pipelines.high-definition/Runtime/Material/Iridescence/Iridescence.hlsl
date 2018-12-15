@@ -681,7 +681,7 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
             // Also it appear like more sharp. To avoid these artifact and at the same time get better match to reference we lerp to original unmodified reflection.
             // Formula is empirical.
             float roughness = PerceptualRoughnessToRoughness(preLightData.iblPerceptualRoughness);
-            float3 Rnew = lerp(Rnew, preLightData.iblR, saturate(smoothstep(0, 1, roughness * roughness)));
+            Rnew = lerp(Rnew, preLightData.iblR, saturate(smoothstep(0, 1, roughness * roughness)));
             R = lerp(Rnew, R, _IBLUsePreIntegratedIblR);
         }
     }
