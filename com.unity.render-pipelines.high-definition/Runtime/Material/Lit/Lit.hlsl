@@ -19,6 +19,7 @@
 // #define USE_DIFFUSE_LAMBERT_BRDF
 
 #define LIT_USE_GGX_ENERGY_COMPENSATION
+// #define LIT_USE_PREFILTERED_IBLR
 
 // Enable reference mode for IBL and area lights
 // Both reference define below can be define only if LightLoop is present, else we get a compile error
@@ -51,6 +52,7 @@ TEXTURE2D(_ShadowMaskTexture); // Alias for shadow mask, so we don't need to kno
 
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/LTCAreaLight/LTCAreaLight.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedIblR/PreIntegratedIblR.hlsl"
 
 //-----------------------------------------------------------------------------
 // Definition
@@ -987,6 +989,14 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     }
 
     preLightData.iblR = reflect(-V, iblN);
+
+#ifdef LIT_USE_PREFILTERED_IBLR
+    float betterIblRoughness;
+    float3 betterIblR;
+    GetPreIntegratedIblR(NdotV, bsdfData.perceptualRoughness, iblN, preLightData.iblR, betterIblR, betterIblRoughness);
+    preLightData.iblPerceptualRoughness = RoughnessToPerceptualRoughness(betterIblRoughness);
+    preLightData.iblR = betterIblR;
+#endif // LIT_USE_PREFILTERED_IBLR
 
     // Area light
     // UVs for sampling the LUTs
@@ -1979,6 +1989,7 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
     else
 #endif
     {
+        #if !defined(LIT_USE_PREFILTERED_IBLR)
         if (!IsEnvIndexTexture2D(lightData.envIndex)) // ENVCACHETYPE_CUBEMAP
         {
             R = GetSpecularDominantDir(bsdfData.normalWS, R, preLightData.iblPerceptualRoughness, ClampNdotV(preLightData.NdotV));
@@ -1988,6 +1999,7 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
             float roughness = PerceptualRoughnessToRoughness(preLightData.iblPerceptualRoughness);
             R = lerp(R, preLightData.iblR, saturate(smoothstep(0, 1, roughness * roughness)));
         }
+        #endif // LIT_USE_PREFILTERED_IBLR
     }
 
     // Note: using influenceShapeType and projectionShapeType instead of (lightData|proxyData).shapeType allow to make compiler optimization in case the type is know (like for sky)
