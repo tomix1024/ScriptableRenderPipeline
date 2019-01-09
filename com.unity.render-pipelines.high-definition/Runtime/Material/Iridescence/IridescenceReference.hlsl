@@ -18,18 +18,6 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
     float accVdotH3 = 0.0;
 
     float3 R = preLightData.iblR;
-
-    {
-        float3 Rnew = GetSpecularDominantDir(bsdfData.normalWS, R, preLightData.iblPerceptualRoughness, ClampNdotV(preLightData.NdotV));
-        // When we are rough, we tend to see outward shifting of the reflection when at the boundary of the projection volume
-        // Also it appear like more sharp. To avoid these artifact and at the same time get better match to reference we lerp to original unmodified reflection.
-        // Formula is empirical.
-        float roughness = PerceptualRoughnessToRoughness(preLightData.iblPerceptualRoughness);
-        Rnew = lerp(Rnew, preLightData.iblR, saturate(smoothstep(0, 1, roughness * roughness)));
-
-        R = lerp(R, Rnew, _ReferenceUseBetterIblR);
-    }
-
     float3 RH = normalize(V + R);
     float VdotRH = ClampNdotV(dot(V, RH));
 

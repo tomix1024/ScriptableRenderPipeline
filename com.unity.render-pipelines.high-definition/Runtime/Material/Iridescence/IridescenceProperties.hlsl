@@ -35,7 +35,6 @@ int _PassValue;
 
 
 
-float _ReferenceUseBetterIblR;
 float _ReferenceUseCorrectOPD;
 float _ReferenceUseCorrectCoeffs;
 float _ReferenceUseMeanVdotH;

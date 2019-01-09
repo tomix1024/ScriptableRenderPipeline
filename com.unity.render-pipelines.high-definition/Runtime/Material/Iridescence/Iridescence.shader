@@ -19,7 +19,6 @@ Shader "HDRenderPipeline/Iridescence"
         _IBLUsePreIntegratedFGD("IBL Preintegrated FGD", Range(0.0, 1.0)) = 1.0
         _IBLUseFresnel0Iridescence("IBL Iridescence as Fresnel0", Range(0.0, 1.0)) = 0.0
 
-        _ReferenceUseBetterIblR("Ref Better IblR", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0
         _ReferenceUseMeanVdotH("Ref Mean VdotH", Range(0.0, 1.0)) = 0.0
