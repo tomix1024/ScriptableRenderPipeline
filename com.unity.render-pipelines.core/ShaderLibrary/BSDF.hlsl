@@ -638,7 +638,9 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     // Reflectance term for m = 0 (DC term amplitude)
     real3 C0p = R12p + Rstarp;
     real3 C0s = R12s + Rstars;
-    real3 I = C0p + C0s;
+    // real3 I = C0p + C0s;
+    real3 Ip = C0p;
+    real3 Is = C0s;
 
     // Reflectance term for m > 0 (pairs of diracs)
     real3 Cmp = Rstarp - T12p;
@@ -647,18 +649,15 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     {
         Cmp *= r123p;
         real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
-        I += Cmp * Smp;
+        Ip += Cmp * Smp;
 
         Cms *= r123s;
         real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
-        I += Cms * Sms;
+        Is += Cms * Sms;
     }
 
-    // Convert back to RGB reflectance
-    //I = clamp(mul(I, XYZ_TO_RGB), real3(0.0, 0.0, 0.0), real3(1.0, 1.0, 1.0));
-    //I = mul(XYZ_TO_RGB, I);
-
-    I = max(I, float3(0,0,0));
+    // This helps with black pixels:
+    real3 I = max(Is, float3(0,0,0)) + max(Ip, float3(0,0,0));
 
     // TODO why do some directions return black values here!?
     return 0.5 * I;
@@ -724,7 +723,9 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     // Reflectance term for m = 0 (DC term amplitude)
     real3 C0p = R12p + Rstarp;
     real3 C0s = R12s + Rstars;
-    real3 I = C0p + C0s;
+    // real3 I = C0p + C0s;
+    real3 Ip = C0p;
+    real3 Is = C0s;
 
     // Reflectance term for m > 0 (pairs of diracs)
     real3 Cmp = Rstarp - T12p;
@@ -733,20 +734,16 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     {
         Cmp *= r123p;
         real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
-        I += Cmp * Smp;
+        Ip += Cmp * Smp;
 
         Cms *= r123s;
         real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
-        I += Cms * Sms;
+        Is += Cms * Sms;
     }
 
-    // Convert back to RGB reflectance
-    //I = clamp(mul(I, XYZ_TO_RGB), real3(0.0, 0.0, 0.0), real3(1.0, 1.0, 1.0));
-    //I = mul(XYZ_TO_RGB, I);
+    // This helps with black pixels:
+    real3 I = max(Is, float3(0,0,0)) + max(Ip, float3(0,0,0));
 
-    I = max(I, float3(0,0,0));
-
-    // TODO why do some directions return black values here!?
     return 0.5 * I;
 }
 
