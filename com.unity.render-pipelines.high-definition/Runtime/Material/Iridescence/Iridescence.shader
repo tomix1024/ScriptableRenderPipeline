@@ -24,6 +24,7 @@ Shader "HDRenderPipeline/Iridescence"
         _ReferenceUseMeanVdotH("Ref Mean VdotH", Range(0.0, 1.0)) = 0.0
         _ReferenceUseVarVdotH("Ref Var VdotH", Range(0.0, 1.0)) = 0.0
         _ReferenceUseVdotHWeightWithLight("Ref Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
+        _ReferenceUseVdotL("Ref Use VdotL", Range(0.0, 1.0)) = 0.0
 
         _IridescenceUseUKF("Use UKF", Range(0.0, 1.0)) = 0.0
         _IridescenceUKFLambda("UKF Lambda", Range(0.0, 2.0)) = 1.0

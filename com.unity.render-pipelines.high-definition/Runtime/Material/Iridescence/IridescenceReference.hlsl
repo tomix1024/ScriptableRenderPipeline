@@ -18,6 +18,11 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
     float accVdotH2 = 0.0;
     float accVdotH3 = 0.0;
 
+    float accVdotL0 = 0.0;
+    float accVdotL1 = 0.0;
+    float accVdotL2 = 0.0;
+    float accVdotL3 = 0.0;
+
     // Integrate VdotH moments
     for (uint i = 0; i < sampleCount; ++i)
     {
@@ -40,11 +45,27 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
             accVdotH1 += accVdotH_weight * VdotH;
             accVdotH2 += accVdotH_weight * VdotH*VdotH;
             accVdotH3 += accVdotH_weight * VdotH*VdotH*VdotH;
+
+            float VdotL = dot(V,L);
+            accVdotL0 += accVdotH_weight;
+            accVdotL1 += accVdotH_weight * VdotL;
+            accVdotL2 += accVdotH_weight * VdotL*VdotL;
+            accVdotL3 += accVdotH_weight * VdotL*VdotL*VdotL;
         }
     }
 
     float VdotH_mean = accVdotH1 / accVdotH0;
     float VdotH_var = accVdotH2 / accVdotH0 - VdotH_mean * VdotH_mean;
+
+    float VdotL_mean = accVdotL1 / accVdotL0;
+    float VdotL_var = accVdotL2 / accVdotL0 - VdotL_mean * VdotL_mean;
+
+    // HoL = 2**-0.5 * ( 1 + LoV )**0.5
+    float surfaceVdotH_mean = sqrt( 0.5*(1 + VdotL_mean) );
+    float surfaceVdotH_var = 1.0/8.0 * VdotL_var / (1 + VdotL_mean);
+
+    VdotH_mean = lerp(VdotH_mean, surfaceVdotH_mean, _ReferenceUseVdotL);
+    VdotH_var = lerp(VdotH_var, surfaceVdotH_var, _ReferenceUseVdotL);
 
 #ifdef IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
     return SRGBToLinear(float3(VdotH_mean*_ReferenceDebugMeanScale + _ReferenceDebugMeanOffset, sqrt(VdotH_var)*_ReferenceDebugDevScale + _ReferenceDebugDevOffset, 0));

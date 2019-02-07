@@ -40,6 +40,7 @@ float _ReferenceUseCorrectCoeffs;
 float _ReferenceUseMeanVdotH;
 float _ReferenceUseVarVdotH;
 float _ReferenceUseVdotHWeightWithLight;
+float _ReferenceUseVdotL;
 
 float _IBLUseMeanVdotH;
 float _IBLUseVarVdotH;
