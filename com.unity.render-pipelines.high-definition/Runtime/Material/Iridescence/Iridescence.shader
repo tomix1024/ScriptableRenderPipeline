@@ -63,13 +63,12 @@ Shader "HDRenderPipeline/Iridescence"
         [HideInInspector] _SrcBlend("__src", Float) = 1.0
         [HideInInspector] _DstBlend("__dst", Float) = 0.0
         [HideInInspector] _ZWrite("__zw", Float) = 1.0
-        [HideInInspector] _CullMode("__cullmode", Float) = 2.0
-        [HideInInspector] _CullModeForward("__cullmodeForward", Float) = 2.0 // This mode is dedicated to Forward to correctly handle backface then front face rendering thin transparent
+        [Enum(Both, 0, Back, 1, Front, 2)]_CullMode("Cull Mode", Float) = 2
         [HideInInspector] _ZTestDepthEqualForOpaque("_ZTestDepthEqualForOpaque", Int) = 4 // Less equal
         [HideInInspector] _ZTestModeDistortion("_ZTestModeDistortion", Int) = 8
         [HideInInspector] _ZTestGBuffer("_ZTestGBuffer", Int) = 4
 
-        [ToggleUI] _DoubleSidedEnable("Double sided enable", Float) = 0.0
+        [Toggle(_DOUBLESIDED_ON)] _DoubleSidedEnable("Double sided enable", Float) = 0.0
         [Enum(Flip, 0, Mirror, 1, None, 2)] _DoubleSidedNormalMode("Double sided normal mode", Float) = 1
         [HideInInspector] _DoubleSidedConstants("_DoubleSidedConstants", Vector) = (1, 1, -1, 0)
 
@@ -286,18 +285,7 @@ Shader "HDRenderPipeline/Iridescence"
             // In case of forward we want to have depth equal for opaque mesh
             ZTest [_ZTestDepthEqualForOpaque]
             ZWrite [_ZWrite]
-            Cull [_CullModeForward]
-            //
-            // NOTE: For _CullModeForward, see BaseLitUI and the handling of TransparentBackfaceEnable:
-            // Basically, we need to use it to support a TransparentBackface pass before this pass
-            // (and it should be placed just before this one) for separate backface and frontface rendering,
-            // eg for "hair shader style" approximate sorting, see eg Thorsten Scheuermann writeups on this:
-            // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.607.1272&rep=rep1&type=pdf
-            // http://amd-dev.wpengine.netdna-cdn.com/wordpress/media/2012/10/Scheuermann_HairSketchSlides.pdf
-            // http://web.engr.oregonstate.edu/~mjb/cs519/Projects/Papers/HairRendering.pdf
-            //
-            // See Lit.shader and the order of the passes after a DistortionVectors, we have:
-            // TransparentDepthPrepass, TransparentBackface, Forward, TransparentDepthPostpass
+            Cull [_CullMode]
 
             HLSLPROGRAM
 
