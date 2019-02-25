@@ -589,9 +589,26 @@ void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, rea
     // layerThickness unit is micrometer for this equation here. Mean 0.5 is 500nm.
     real Dinc = 3.0 * layerThickness;
 
-    real sinTheta2 = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
-    real cosTheta2 = sqrt(1.0 - sinTheta2);
+    real sinTheta2Sq = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
+    real cosTheta2 = sqrt(1.0 - sinTheta2Sq);
     real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1))); // cf. EKF
+
+    // Phase shift
+    OPD = Dinc * cosTheta2;
+    OPDSigma = Dinc * sqrt(cosTheta2Var);
+
+    // TODO compute correct phi!!
+    phi = PI;
+}
+
+void EvalOpticalPathDifferenceVdotL(real eta1, real VdotL, real VdotLVar, real eta2, real layerThickness, out real OPD, out real OPDSigma, out real phi)
+{
+    // layerThickness unit is micrometer for this equation here. Mean 0.5 is 500nm.
+    real Dinc = 3.0 * layerThickness;
+
+    real sinTheta2Sq = 0.5 * Sq(eta1 / eta2) * (1.0 - VdotL);
+    real cosTheta2 = sqrt(1.0 - sinTheta2Sq);
+    real cosTheta2Var = VdotLVar * Sq( 0.25 * Sq(eta1 / eta2) ) / (1 - 0.5 * Sq(eta1 / eta2) * (1 - VdotL)); // cf. EKF
 
     // Phase shift
     OPD = Dinc * cosTheta2;

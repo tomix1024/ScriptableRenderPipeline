@@ -24,7 +24,7 @@ Shader "HDRenderPipeline/Iridescence"
         _ReferenceUseMeanVdotH("Ref Mean VdotH", Range(0.0, 1.0)) = 0.0
         _ReferenceUseVarVdotH("Ref Var VdotH", Range(0.0, 1.0)) = 0.0
         _ReferenceUseVdotHWeightWithLight("Ref Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
-        _ReferenceUseVdotL("Ref Use VdotL", Range(0.0, 1.0)) = 0.0
+        [Toggle(IRIDESCENCE_REFERENCE_USE_VDOTL)]_ReferenceUseVdotL("Ref Use VdotL", Float) = 0.0
 
         _IridescenceUseUKF("Use UKF", Range(0.0, 1.0)) = 0.0
         _IridescenceUKFLambda("UKF Lambda", Range(0.0, 2.0)) = 1.0
@@ -106,6 +106,7 @@ Shader "HDRenderPipeline/Iridescence"
 
     #pragma multi_compile _ IRIDESCENCE_DISPLAY_REFERENCE_IBL_16 IRIDESCENCE_DISPLAY_REFERENCE_IBL_256 IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048 IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K
     #pragma multi_compile _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
+    #pragma multi_compile _ IRIDESCENCE_REFERENCE_USE_VDOTL
 
     //-------------------------------------------------------------------------------------
     // Define
