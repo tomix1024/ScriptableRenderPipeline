@@ -991,10 +991,10 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     preLightData.iblR = reflect(-V, iblN);
 
 #ifdef LIT_USE_PREFILTERED_IBLR
-    float betterIblRoughness;
     float3 betterIblR;
-    GetPreIntegratedIblR(NdotV, bsdfData.perceptualRoughness, iblN, preLightData.iblR, betterIblR, betterIblRoughness);
-    preLightData.iblPerceptualRoughness = RoughnessToPerceptualRoughness(betterIblRoughness);
+    float  betterIblPerceptualRoughness;
+    GetPreIntegratedIblR(NdotV, bsdfData.perceptualRoughness, iblN, preLightData.iblR, betterIblR, betterIblPerceptualRoughness);
+    preLightData.iblPerceptualRoughness = betterIblPerceptualRoughness;
     preLightData.iblR = betterIblR;
 #endif // LIT_USE_PREFILTERED_IBLR
 
