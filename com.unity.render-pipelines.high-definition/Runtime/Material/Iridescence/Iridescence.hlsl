@@ -259,9 +259,8 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     }
 
     float specularReflectivity;
-    GetPreIntegratedFGDGGXAndDisneyDiffuse(NdotV, preLightData.iblPerceptualRoughness, lerp(bsdfData.fresnel0, iridescenceFGD, _IBLUseFresnel0Iridescence), preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);
-    preLightData.specularFGD *= lerp(iridescenceFGD, float3(1,1,1), _IBLUseFresnel0Iridescence);
-    preLightData.specularFGD = lerp(iridescenceFGD, preLightData.specularFGD, _IBLUsePreIntegratedFGD);
+    GetPreIntegratedFGDGGXAndDisneyDiffuse(NdotV, preLightData.iblPerceptualRoughness, bsdfData.fresnel0, preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);
+    preLightData.specularFGD *= iridescenceFGD;
 
 #ifdef USE_DIFFUSE_LAMBERT_BRDF
     preLightData.diffuseFGD = 1.0;

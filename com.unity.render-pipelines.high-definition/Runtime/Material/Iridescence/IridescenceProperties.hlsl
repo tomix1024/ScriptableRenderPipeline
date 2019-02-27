@@ -42,16 +42,51 @@ float _ReferenceUseVarVdotH;
 float _ReferenceUseVdotHWeightWithLight;
 float _ReferenceUseVdotL;
 
-float _IBLUseMeanVdotH;
-float _IBLUseVarVdotH;
-float _IBLUsePreIntegratedFGD;
-float _IBLUseFresnel0Iridescence;
+#ifdef IRIDESCENCE_USE_PREINTEGRATED_IBLR
+    #define _IBLUsePreIntegratedIblR 1
+#else
+    #define _IBLUsePreIntegratedIblR 0
+#endif // IRIDESCENCE_USE_PREINTEGRATED_IBLR
 
-float _IBLUsePreIntegratedIblR;
-float _IBLUsePreIntegratedIblRoughness;
+#ifdef IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS
+    #define _IBLUsePreIntegratedIblRoughness 1
+#else
+    #define _IBLUsePreIntegratedIblRoughness 0
+#endif // IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS
 
+#ifdef IRIDESCENCE_USE_VDOTH_MEAN
+    #define _IBLUseMeanVdotH 1
+#else
+    #define _IBLUseMeanVdotH 0
+#endif // IRIDESCENCE_USE_VDOTH_MEAN
 
-float _IridescenceUseUKF;
+#ifdef IRIDESCENCE_USE_VDOTH_VAR
+    #define _IBLUseVarVdotH 1
+#else
+    #define _IBLUseVarVdotH 0
+#endif // IRIDESCENCE_USE_VDOTH_VAR
+
+#ifdef IRIDESCENCE_USE_UKF
+    #define _IridescenceUseUKF 1
+#else
+    #define _IridescenceUseUKF 0
+#endif // IRIDESCENCE_USE_UKF
+
+#ifndef _IBLUsePreIntegratedIblR
+    float _IBLUsePreIntegratedIblR;
+#endif
+#ifndef _IBLUsePreIntegratedIblRoughness
+    float _IBLUsePreIntegratedIblRoughness;
+#endif
+#ifndef _IBLUseMeanVdotH
+    float _IBLUseMeanVdotH;
+#endif
+#ifndef _IBLUseVarVdotH
+    float _IBLUseVarVdotH;
+#endif
+#ifndef _IridescenceUseUKF
+    float _IridescenceUseUKF;
+#endif
 float _IridescenceUKFLambda;
 
 float _ReferenceDebugMeanScale;

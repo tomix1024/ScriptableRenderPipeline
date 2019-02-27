@@ -11,13 +11,14 @@ Shader "HDRenderPipeline/Iridescence"
         _Fresnel0("Fresnel0 for IBL", Color) = (1,1,1,1)
 
 
-        _IBLUsePreIntegratedIblR("IBL Preintegrated R", Range(0.0, 1.0)) = 0.0
-        _IBLUsePreIntegratedIblRoughness("IBL Preintegrated Roughness", Range(0.0, 1.0)) = 0.0
+        [Toggle(IRIDESCENCE_USE_PREINTEGRATED_IBLR)]_IBLUsePreIntegratedIblR("IBL Preintegrated R", Float) = 0.0
+        [Toggle(IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS)]_IBLUsePreIntegratedIblRoughness("IBL Preintegrated Roughness", Float) = 0.0
 
-        _IBLUseMeanVdotH("IBL Mean VdotH", Range(0.0, 1.0)) = 0.0
-        _IBLUseVarVdotH("IBL Var VdotH", Range(0.0, 1.0)) = 0.0
-        _IBLUsePreIntegratedFGD("IBL Preintegrated FGD", Range(0.0, 1.0)) = 1.0
-        _IBLUseFresnel0Iridescence("IBL Iridescence as Fresnel0", Range(0.0, 1.0)) = 0.0
+        [Toggle(IRIDESCENCE_USE_VDOTH_MEAN)]_IBLUseMeanVdotH("IBL Mean VdotH", Float) = 0.0
+        [Toggle(IRIDESCENCE_USE_VDOTH_VAR)]_IBLUseVarVdotH("IBL Var VdotH", Float) = 0.0
+
+        [Toggle(IRIDESCENCE_USE_UKF)]_IridescenceUseUKF("Use UKF", Float) = 0.0
+        _IridescenceUKFLambda("UKF Lambda", Range(0.0, 2.0)) = 1.0
 
         _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0
@@ -25,9 +26,6 @@ Shader "HDRenderPipeline/Iridescence"
         _ReferenceUseVarVdotH("Ref Var VdotH", Range(0.0, 1.0)) = 0.0
         _ReferenceUseVdotHWeightWithLight("Ref Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
         _ReferenceUseVdotL("Ref Use VdotL", Range(0.0, 1.0)) = 0.0
-
-        _IridescenceUseUKF("Use UKF", Range(0.0, 1.0)) = 0.0
-        _IridescenceUKFLambda("UKF Lambda", Range(0.0, 2.0)) = 1.0
 
         _ReferenceDebugMeanScale("Ref Debug Mean Scale", Float) = 1.0
         _ReferenceDebugMeanOffset("Ref Debug Mean Offset", Float) = 0.0
@@ -104,8 +102,17 @@ Shader "HDRenderPipeline/Iridescence"
     //enable GPU instancing support
     #pragma multi_compile_instancing
 
-    #pragma multi_compile _ IRIDESCENCE_DISPLAY_REFERENCE_IBL_16 IRIDESCENCE_DISPLAY_REFERENCE_IBL_256 IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048 IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K
-    #pragma multi_compile _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
+    #pragma shader_feature _ IRIDESCENCE_DISPLAY_REFERENCE_IBL_16 IRIDESCENCE_DISPLAY_REFERENCE_IBL_256 IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048 IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K
+    #pragma shader_feature _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
+
+
+    #pragma shader_feature _ IRIDESCENCE_USE_PREINTEGRATED_IBLR
+    #pragma shader_feature _ IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS
+
+    #pragma shader_feature _ IRIDESCENCE_USE_VDOTH_MEAN
+    #pragma shader_feature _ IRIDESCENCE_USE_VDOTH_VAR
+
+    #pragma shader_feature _ IRIDESCENCE_USE_UKF
 
     //-------------------------------------------------------------------------------------
     // Define
