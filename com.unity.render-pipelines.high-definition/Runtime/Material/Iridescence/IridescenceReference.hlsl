@@ -61,11 +61,11 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
     float VdotL_var = accVdotL2 / accVdotL0 - VdotL_mean * VdotL_mean;
 
     // HoL = 2**-0.5 * ( 1 + LoV )**0.5
-    float surfaceVdotH_mean = sqrt( 0.5*(1 + VdotL_mean) );
-    float surfaceVdotH_var = 1.0/8.0 * VdotL_var / (1 + VdotL_mean);
+    // float surfaceVdotH_mean = sqrt( 0.5*(1 + VdotL_mean) );
+    // float surfaceVdotH_var = 1.0/8.0 * VdotL_var / (1 + VdotL_mean);
 
-    VdotH_mean = lerp(VdotH_mean, surfaceVdotH_mean, _ReferenceUseVdotL);
-    VdotH_var = lerp(VdotH_var, surfaceVdotH_var, _ReferenceUseVdotL);
+    // VdotH_mean = VdotH_mean, surfaceVdotH_mean, _ReferenceUseVdotL);
+    // VdotH_var = VdotH_var, surfaceVdotH_var, _ReferenceUseVdotL);
 
 #ifdef IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
     return SRGBToLinear(float3(VdotH_mean*_ReferenceDebugMeanScale + _ReferenceDebugMeanOffset, sqrt(VdotH_var)*_ReferenceDebugDevScale + _ReferenceDebugDevOffset, 0));
@@ -105,7 +105,13 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
 
             // float3 F = EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
             float OPD, OPDSigma, phi;
+
+        #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
+            EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma, phi);
+        #else
             EvalOpticalPathDifference(eta1, viewAngleOPD, viewAngleOPDVar, eta2, thickness, OPD, OPDSigma, phi);
+        #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
+
             float3 F = EvalIridescenceCorrectOPD(eta1, viewAngleCoeffs, viewAngleCoeffsVar, eta2, eta3, kappa3, OPD, OPDSigma, phi);
 
             float3 FweightOverPdf = F * weightOverPdf;
