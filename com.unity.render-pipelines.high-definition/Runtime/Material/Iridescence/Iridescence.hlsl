@@ -289,10 +289,10 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     // Modify iblR and iblPerceptualRoughness
 
     float3 tempIblR;
-    float  tempIblPerceptualRoughness;
-    GetPreIntegratedIblR(NdotV, preLightData.iblPerceptualRoughness, bsdfData.normalWS, preLightData.iblR, tempIblR, tempIblPerceptualRoughness);
+    float  tempIblRoughness;
+    GetPreIntegratedIblR(NdotV, preLightData.iblPerceptualRoughness, bsdfData.normalWS, preLightData.iblR, tempIblR, tempIblRoughness);
     preLightData.iblR = lerp(preLightData.iblR, tempIblR, _IBLUsePreIntegratedIblR);
-    preLightData.iblPerceptualRoughness = lerp(preLightData.iblPerceptualRoughness, tempIblPerceptualRoughness, _IBLUsePreIntegratedIblRoughness);
+    preLightData.iblPerceptualRoughness = lerp(preLightData.iblPerceptualRoughness, RoughnessToPerceptualRoughness(tempIblRoughness), _IBLUsePreIntegratedIblRoughness);
 
 
     // Area light
