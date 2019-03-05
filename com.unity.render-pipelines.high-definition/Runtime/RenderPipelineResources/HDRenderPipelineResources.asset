@@ -68,6 +68,7 @@ MonoBehaviour:
     computeGgxIblSampleDataCS: {fileID: 7200000, guid: 764a24bb47ef5ba4781d9ae82ca07445,
       type: 3}
     GGXConvolvePS: {fileID: 4800000, guid: 123ed592ad5c2494b8aed301fd609e7b, type: 3}
+    computeWSdotLPS: {fileID: 4800000, guid: b24cd9592320523e89ee67a7840310e1, type: 3}
     opaqueAtmosphericScatteringPS: {fileID: 4800000, guid: 32f724728cf19904291226f239ec16f0,
       type: 3}
     hdriSkyPS: {fileID: 4800000, guid: 9bd32a6ece529fd4f9408b8d7e00c10d, type: 3}

@@ -433,5 +433,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static readonly int _PreIntegratedFGD_CharlieAndFabric = Shader.PropertyToID("_PreIntegratedFGD_CharlieAndFabric");
 
         public static readonly int _PreIntegratedVdotH_GGX = Shader.PropertyToID("_PreIntegratedVdotH_GGX");
+
+        public static readonly int _PreIntegratedWSdotL_X1_GGX = Shader.PropertyToID("_PreIntegratedWSdotL_X1_GGX");
+        public static readonly int _PreIntegratedWSdotL_X2_GGX = Shader.PropertyToID("_PreIntegratedWSdotL_X2_GGX");
+        public static readonly int _PreIntegratedWSdotL_XY_GGX = Shader.PropertyToID("_PreIntegratedWSdotL_XY_GGX");
     }
 }

@@ -36,6 +36,7 @@
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/LTCAreaLight/LTCAreaLight.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedVdotH/PreIntegratedVdotH.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedVdotL/PreIntegratedVdotL.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedIblR/PreIntegratedIblR.hlsl"
 
 //-----------------------------------------------------------------------------
@@ -238,6 +239,20 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     // Handle IBL + area light + multiscattering.
     // Note: use the not modified by anisotropy iblPerceptualRoughness here.
 
+
+    float3 iblN = N;
+    preLightData.iblR = reflect(-V, iblN);
+
+
+    // Modify iblR and iblPerceptualRoughness
+
+    float3 tempIblR;
+    float  tempIblRoughness;
+    GetPreIntegratedIblR(NdotV, preLightData.iblPerceptualRoughness, bsdfData.normalWS, preLightData.iblR, tempIblR, tempIblRoughness);
+    preLightData.iblR = lerp(preLightData.iblR, tempIblR, _IBLUsePreIntegratedIblR);
+    preLightData.iblPerceptualRoughness = lerp(preLightData.iblPerceptualRoughness, RoughnessToPerceptualRoughness(tempIblRoughness), _IBLUsePreIntegratedIblRoughness);
+
+
     float3 iridescenceFGD;
     {
         float4 VdotH_moments;
@@ -255,7 +270,21 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float3 eta3 = bsdfData.iridescenceEta3;
         float3 kappa3 = bsdfData.iridescenceKappa3;
 
-        iridescenceFGD = EvalIridescenceCorrect(eta1, viewAngle, viewAngleVar, eta2, thickness, eta3, kappa3, _IridescenceUseUKF, _IridescenceUKFLambda);
+        // iridescenceFGD = EvalIridescenceCorrect(eta1, viewAngle, viewAngleVar, eta2, thickness, eta3, kappa3, _IridescenceUseUKF, _IridescenceUKFLambda);
+        float OPD, OPDSigma, phi;
+
+    #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
+
+        float VdotL_mean;
+        float VdotL_var;
+        GetPreIntegratedVdotLGGX(V, preLightData.iblR, preLightData.iblPerceptualRoughness, VdotL_mean, VdotL_var);
+
+        EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma, phi);
+    #else
+        EvalOpticalPathDifference(eta1, viewAngle, viewAngleVar, eta2, thickness, OPD, OPDSigma, phi);
+    #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
+
+        iridescenceFGD = EvalIridescenceCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma, phi);
     }
 
     float specularReflectivity;
@@ -278,21 +307,7 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     preLightData.energyCompensation = 0.0;
 #endif // LIT_USE_GGX_ENERGY_COMPENSATION
 
-    float3 iblN;
-
     preLightData.partLambdaV = GetSmithJointGGXPartLambdaV(NdotV, bsdfData.roughness);
-    iblN = N;
-
-    preLightData.iblR = reflect(-V, iblN);
-
-
-    // Modify iblR and iblPerceptualRoughness
-
-    float3 tempIblR;
-    float  tempIblRoughness;
-    GetPreIntegratedIblR(NdotV, preLightData.iblPerceptualRoughness, bsdfData.normalWS, preLightData.iblR, tempIblR, tempIblRoughness);
-    preLightData.iblR = lerp(preLightData.iblR, tempIblR, _IBLUsePreIntegratedIblR);
-    preLightData.iblPerceptualRoughness = lerp(preLightData.iblPerceptualRoughness, RoughnessToPerceptualRoughness(tempIblRoughness), _IBLUsePreIntegratedIblRoughness);
 
 
     // Area light
