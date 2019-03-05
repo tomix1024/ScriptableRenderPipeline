@@ -6,25 +6,48 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     internal class SkyRenderingContext
     {
         IBLFilterGGX            m_IBLFilterGGX;
+        ComputeWSdotL           m_ComputeWSdotL;
         RTHandleSystem.RTHandle m_SkyboxCubemapRT;
         RTHandleSystem.RTHandle m_SkyboxGGXCubemapRT;
         RTHandleSystem.RTHandle m_SkyboxMarginalRowCdfRT;
         RTHandleSystem.RTHandle m_SkyboxConditionalCdfRT;
+        RTHandleSystem.RTHandle m_SkyboxWSdotL1CubemapRT;
+        RTHandleSystem.RTHandle m_SkyboxWSdotL2CubemapRT;
+        RTHandleSystem.RTHandle m_SkyboxWSdotL3CubemapRT;
+        RTHandleSystem.RTHandle m_SkyboxWSdotL1GGXCubemapRT;
+        RTHandleSystem.RTHandle m_SkyboxWSdotL2GGXCubemapRT;
+        RTHandleSystem.RTHandle m_SkyboxWSdotL3GGXCubemapRT;
         Vector4                 m_CubemapScreenSize;
         Matrix4x4[]             m_facePixelCoordToViewDirMatrices   = new Matrix4x4[6];
         Matrix4x4[]             m_faceCameraInvViewProjectionMatrix = new Matrix4x4[6];
         bool                    m_SupportsConvolution = false;
         bool                    m_SupportsMIS = false;
+        bool                    m_SupportsWSdotL = false;
         BuiltinSkyParameters    m_BuiltinParameters = new BuiltinSkyParameters();
         bool                    m_NeedUpdate = true;
 
         public RenderTexture cubemapRT { get { return m_SkyboxCubemapRT; } }
         public Texture reflectionTexture { get { return m_SkyboxGGXCubemapRT; } }
+        public Texture filteredWSdotL1Texture { get { return m_SkyboxWSdotL1GGXCubemapRT; } }
+        public Texture filteredWSdotL2Texture { get { return m_SkyboxWSdotL2GGXCubemapRT; } }
+        public Texture filteredWSdotL3Texture { get { return m_SkyboxWSdotL3GGXCubemapRT; } }
 
+
+        public SkyRenderingContext(IBLFilterGGX filterGGX, ComputeWSdotL computeWSdotL, int resolution, bool supportsConvolution)
+        {
+            m_IBLFilterGGX = filterGGX;
+            m_ComputeWSdotL = computeWSdotL;
+            m_SupportsWSdotL = supportsConvolution;
+            m_SupportsConvolution = supportsConvolution;
+
+            RebuildTextures(resolution);
+        }
 
         public SkyRenderingContext(IBLFilterGGX filterGGX, int resolution, bool supportsConvolution)
         {
             m_IBLFilterGGX = filterGGX;
+            m_ComputeWSdotL = null;
+            m_SupportsWSdotL = false;
             m_SupportsConvolution = supportsConvolution;
 
             RebuildTextures(resolution);
@@ -39,9 +62,21 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 RTHandles.Release(m_SkyboxCubemapRT);
                 RTHandles.Release(m_SkyboxGGXCubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL1CubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL2CubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL3CubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL1GGXCubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL2GGXCubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL3GGXCubemapRT);
 
                 m_SkyboxCubemapRT = null;
                 m_SkyboxGGXCubemapRT = null;
+                m_SkyboxWSdotL1CubemapRT = null;
+                m_SkyboxWSdotL2CubemapRT = null;
+                m_SkyboxWSdotL3CubemapRT = null;
+                m_SkyboxWSdotL1GGXCubemapRT = null;
+                m_SkyboxWSdotL2GGXCubemapRT = null;
+                m_SkyboxWSdotL3GGXCubemapRT = null;
             }
 
             if (!m_SupportsMIS && (m_SkyboxConditionalCdfRT != null))
@@ -53,6 +88,23 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 m_SkyboxMarginalRowCdfRT = null;
             }
 
+            if (!m_SupportsWSdotL && (m_SkyboxWSdotL1CubemapRT != null))
+            {
+                RTHandles.Release(m_SkyboxWSdotL1CubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL2CubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL3CubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL1GGXCubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL2GGXCubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL3GGXCubemapRT);
+
+                m_SkyboxWSdotL1CubemapRT = null;
+                m_SkyboxWSdotL2CubemapRT = null;
+                m_SkyboxWSdotL3CubemapRT = null;
+                m_SkyboxWSdotL1GGXCubemapRT = null;
+                m_SkyboxWSdotL2GGXCubemapRT = null;
+                m_SkyboxWSdotL3GGXCubemapRT = null;
+            }
+
             // Reallocate everything
             if (m_SkyboxCubemapRT == null)
             {
@@ -62,6 +114,16 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             if (m_SkyboxGGXCubemapRT == null && m_SupportsConvolution)
             {
                 m_SkyboxGGXCubemapRT = RTHandles.Alloc(resolution, resolution, colorFormat: RenderTextureFormat.ARGBHalf, sRGB: false, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxGGXCubemap");
+            }
+
+            if (m_SkyboxWSdotL1CubemapRT == null && m_SupportsWSdotL)
+            {
+                m_SkyboxWSdotL1CubemapRT = RTHandles.Alloc(resolution, resolution, colorFormat: RenderTextureFormat.ARGBHalf, sRGB: false, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxWSdotL1GGXCubemap");
+                m_SkyboxWSdotL2CubemapRT = RTHandles.Alloc(resolution, resolution, colorFormat: RenderTextureFormat.ARGBHalf, sRGB: false, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxWSdotL1GGXCubemap");
+                m_SkyboxWSdotL3CubemapRT = RTHandles.Alloc(resolution, resolution, colorFormat: RenderTextureFormat.ARGBHalf, sRGB: false, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxWSdotL1GGXCubemap");
+                m_SkyboxWSdotL1GGXCubemapRT = RTHandles.Alloc(resolution, resolution, colorFormat: RenderTextureFormat.ARGBHalf, sRGB: false, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxWSdotL1GGXCubemap");
+                m_SkyboxWSdotL2GGXCubemapRT = RTHandles.Alloc(resolution, resolution, colorFormat: RenderTextureFormat.ARGBHalf, sRGB: false, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxWSdotL2GGXCubemap");
+                m_SkyboxWSdotL3GGXCubemapRT = RTHandles.Alloc(resolution, resolution, colorFormat: RenderTextureFormat.ARGBHalf, sRGB: false, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxWSdotL3GGXCubemap");
             }
 
             if (m_SupportsMIS && (m_SkyboxConditionalCdfRT == null))
@@ -106,6 +168,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             RTHandles.Release(m_SkyboxGGXCubemapRT);
             RTHandles.Release(m_SkyboxMarginalRowCdfRT);
             RTHandles.Release(m_SkyboxConditionalCdfRT);
+            RTHandles.Release(m_SkyboxWSdotL1CubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL2CubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL3CubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL1GGXCubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL2GGXCubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL3GGXCubemapRT);
         }
 
         void RenderSkyToCubemap(SkyUpdateContext skyContext)
@@ -135,6 +203,28 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     m_IBLFilterGGX.FilterCubemapMIS(m_BuiltinParameters.commandBuffer, m_SkyboxCubemapRT, m_SkyboxGGXCubemapRT, m_SkyboxConditionalCdfRT, m_SkyboxMarginalRowCdfRT);
                 else
                     m_IBLFilterGGX.FilterCubemap(m_BuiltinParameters.commandBuffer, m_SkyboxCubemapRT, m_SkyboxGGXCubemapRT);
+            }
+        }
+
+        void RenderWSdotLCubemaps(SkyUpdateContext skyContext)
+        {
+            m_ComputeWSdotL.Compute(m_BuiltinParameters.commandBuffer, m_SkyboxCubemapRT, m_SkyboxWSdotL1CubemapRT, m_SkyboxWSdotL2CubemapRT, m_SkyboxWSdotL3CubemapRT);
+
+            m_BuiltinParameters.commandBuffer.GenerateMips(m_SkyboxWSdotL1CubemapRT);
+            m_BuiltinParameters.commandBuffer.GenerateMips(m_SkyboxWSdotL2CubemapRT);
+            m_BuiltinParameters.commandBuffer.GenerateMips(m_SkyboxWSdotL3CubemapRT);
+
+            if (skyContext.skySettings.useMIS && m_SupportsMIS)
+            {
+                m_IBLFilterGGX.FilterCubemapMIS(m_BuiltinParameters.commandBuffer, m_SkyboxWSdotL1CubemapRT, m_SkyboxWSdotL1GGXCubemapRT, m_SkyboxConditionalCdfRT, m_SkyboxMarginalRowCdfRT);
+                m_IBLFilterGGX.FilterCubemapMIS(m_BuiltinParameters.commandBuffer, m_SkyboxWSdotL2CubemapRT, m_SkyboxWSdotL2GGXCubemapRT, m_SkyboxConditionalCdfRT, m_SkyboxMarginalRowCdfRT);
+                m_IBLFilterGGX.FilterCubemapMIS(m_BuiltinParameters.commandBuffer, m_SkyboxWSdotL3CubemapRT, m_SkyboxWSdotL3GGXCubemapRT, m_SkyboxConditionalCdfRT, m_SkyboxMarginalRowCdfRT);
+            }
+            else
+            {
+                m_IBLFilterGGX.FilterCubemap(m_BuiltinParameters.commandBuffer, m_SkyboxWSdotL1CubemapRT, m_SkyboxWSdotL1GGXCubemapRT);
+                m_IBLFilterGGX.FilterCubemap(m_BuiltinParameters.commandBuffer, m_SkyboxWSdotL2CubemapRT, m_SkyboxWSdotL2GGXCubemapRT);
+                m_IBLFilterGGX.FilterCubemap(m_BuiltinParameters.commandBuffer, m_SkyboxWSdotL3CubemapRT, m_SkyboxWSdotL3GGXCubemapRT);
             }
         }
 
@@ -199,6 +289,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             using (new ProfilingSample(cmd, "Update Env: Convolve Lighting Cubemap"))
                             {
                                 RenderCubemapGGXConvolution(skyContext);
+                            }
+                        }
+                        if (m_SupportsWSdotL)
+                        {
+                            using (new ProfilingSample(cmd, "Update Env: Compute WSdotL Cubemaps"))
+                            {
+                                RenderWSdotLCubemaps(skyContext);
                             }
                         }
 

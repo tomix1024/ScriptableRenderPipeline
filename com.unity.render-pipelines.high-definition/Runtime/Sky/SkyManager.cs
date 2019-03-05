@@ -178,6 +178,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             cmd.SetGlobalTexture(HDShaderIDs._SkyTexture, skyReflection);
             float mipCount = Mathf.Clamp(Mathf.Log((float)skyReflection.width, 2.0f) + 1, 0.0f, 6.0f);
             cmd.SetGlobalFloat(HDShaderIDs._SkyTextureMipCount, mipCount);
+
+            cmd.SetGlobalTexture(HDShaderIDs._PreIntegratedWSdotL_X1_GGX, m_SkyRenderingContext.filteredWSdotL1Texture);
+            cmd.SetGlobalTexture(HDShaderIDs._PreIntegratedWSdotL_X2_GGX, m_SkyRenderingContext.filteredWSdotL2Texture);
+            cmd.SetGlobalTexture(HDShaderIDs._PreIntegratedWSdotL_XY_GGX, m_SkyRenderingContext.filteredWSdotL3Texture);
         }
 
 #if UNITY_EDITOR
@@ -193,10 +197,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
 #endif
 
-        public void Build(HDRenderPipelineAsset hdAsset, IBLFilterGGX iblFilterGGX)
+        public void Build(HDRenderPipelineAsset hdAsset, IBLFilterGGX iblFilterGGX, ComputeWSdotL computeWSdotL)
         {
             m_BakingSkyRenderingContext = new SkyRenderingContext(iblFilterGGX, (int)hdAsset.renderPipelineSettings.lightLoopSettings.skyReflectionSize, false);
-            m_SkyRenderingContext = new SkyRenderingContext(iblFilterGGX, (int)hdAsset.renderPipelineSettings.lightLoopSettings.skyReflectionSize, true);
+            m_SkyRenderingContext = new SkyRenderingContext(iblFilterGGX, computeWSdotL, (int)hdAsset.renderPipelineSettings.lightLoopSettings.skyReflectionSize, true);
 
             m_StandardSkyboxMaterial = CoreUtils.CreateEngineMaterial(hdAsset.renderPipelineResources.shaders.skyboxCubemapPS);
             m_BlitCubemapMaterial = CoreUtils.CreateEngineMaterial(hdAsset.renderPipelineResources.shaders.blitCubemapPS);

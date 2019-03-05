@@ -25,7 +25,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             if (m_ComputeWSdotLMaterial == null)
             {
-                // TODO
                 m_ComputeWSdotLMaterial = CoreUtils.CreateEngineMaterial(m_RenderPipelineResources.shaders.computeWSdotLPS);
             }
 

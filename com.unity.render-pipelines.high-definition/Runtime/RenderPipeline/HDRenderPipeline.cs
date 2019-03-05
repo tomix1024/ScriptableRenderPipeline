@@ -76,6 +76,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         MipGenerator m_MipGenerator;
 
         IBLFilterGGX m_IBLFilterGGX = null;
+        ComputeWSdotL m_ComputeWSdotL = null;
 
         ComputeShader m_ScreenSpaceReflectionsCS { get { return m_Asset.renderPipelineResources.shaders.screenSpaceReflectionsCS; } }
         int m_SsrTracingKernel      = -1;
@@ -286,10 +287,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_MaterialList.ForEach(material => material.Build(asset));
 
             m_IBLFilterGGX = new IBLFilterGGX(asset.renderPipelineResources, m_MipGenerator);
+            m_ComputeWSdotL = new ComputeWSdotL(asset.renderPipelineResources);
 
             m_LightLoop.Build(asset, m_IBLFilterGGX);
 
-            m_SkyManager.Build(asset, m_IBLFilterGGX);
+            m_SkyManager.Build(asset, m_IBLFilterGGX, m_ComputeWSdotL);
 
             m_VolumetricLightingSystem.Build(asset);
 
@@ -592,6 +594,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_SkyManager.Cleanup();
             m_VolumetricLightingSystem.Cleanup();
             m_IBLFilterGGX.Cleanup();
+            m_ComputeWSdotL.Cleanup();
 
             HDCamera.ClearAll();
 
@@ -906,6 +909,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 // TODO: this should be move outside of the camera loop but we have no command buffer, ask details to Tim or Julien to do this
                 if (!m_IBLFilterGGX.IsInitialized())
                     m_IBLFilterGGX.Initialize(cmd);
+
+                if (!m_ComputeWSdotL.IsInitialized())
+                    m_ComputeWSdotL.Initialize(cmd);
 
                 foreach (var material in m_MaterialList)
                     material.RenderInit(cmd);

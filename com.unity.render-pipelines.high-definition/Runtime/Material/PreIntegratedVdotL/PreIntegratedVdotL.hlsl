@@ -1,4 +1,5 @@
-#include "PreIntegratedVdotL.cs.hlsl"
+#ifndef PREINTEGRATED_VDOTL_HLSL
+#define PREINTEGRATED_VDOTL_HLSL
 
 TEXTURECUBE(_PreIntegratedWSdotL_X1_GGX);
 TEXTURECUBE(_PreIntegratedWSdotL_X2_GGX);
@@ -36,3 +37,5 @@ void GetPreIntegratedVdotLGGX(float3 V, float3 iblR, float iblPerceptualRoughnes
 
     VdotL_var = max(0, dot(V, mul(viewWScovar, V)));
 }
+
+#endif // PREINTEGRATED_VDOTL_HLSL
