@@ -21,6 +21,7 @@ Shader "Hidden/HDRenderPipeline/ComputeWSdotL"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 
             TEXTURECUBE(_MainTex);
+            SAMPLER(sampler_MainTex);
 
             float4x4 _PixelCoordToViewDirWS; // Actually just 3x3, but Unity can only set 4x4
 
@@ -52,7 +53,8 @@ Shader "Hidden/HDRenderPipeline/ComputeWSdotL"
                 float3 dirWS = -normalize(mul(float3(input.positionCS.xy, 1.0), (float3x3)_PixelCoordToViewDirWS));
                 // Reverse it to point into the scene
 
-                real3 val = SAMPLE_TEXTURECUBE_LOD(_MainTex, s_linear_clamp_sampler, dirWS, 0).rgb;
+                // NO LOD! want to filter across (larger) texture (?) // s_linear_clamp_sampler
+                real3 val = SAMPLE_TEXTURECUBE(_MainTex, sampler_MainTex, dirWS).rgb;
 
                 float weight = dot(val, real3(0.2126, 0.7152, 0.0722));
 
@@ -63,11 +65,11 @@ Shader "Hidden/HDRenderPipeline/ComputeWSdotL"
                 switch (_OutputIndex)
                 {
                     case 0:
-                        return float4(X_Y_Z, weight);
+                        return float4(X_Y_Z, 1);
                     case 1:
-                        return float4(X2_Y2_Z2, weight);
+                        return float4(X2_Y2_Z2, 1);
                     case 2:
-                        return float4(XY_YZ_ZX, weight);
+                        return float4(XY_YZ_ZX, 1);
                     default:
                         return float4(1,0,1,1);
                 }

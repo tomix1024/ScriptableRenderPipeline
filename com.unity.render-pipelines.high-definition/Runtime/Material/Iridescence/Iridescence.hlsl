@@ -279,6 +279,8 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float VdotL_var;
         GetPreIntegratedVdotLGGX(V, preLightData.iblR, preLightData.iblPerceptualRoughness, VdotL_mean, VdotL_var);
 
+        VdotL_var = lerp(0, VdotL_var, _IBLUseVarVdotH);
+
         EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma, phi);
     #else
         EvalOpticalPathDifference(eta1, viewAngle, viewAngleVar, eta2, thickness, OPD, OPDSigma, phi);

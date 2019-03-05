@@ -9,13 +9,12 @@ TEXTURECUBE(_PreIntegratedWSdotL_XY_GGX);
 // reflectivity is  Integral{(BSDF_GGX / F) - use for multiscattering
 void GetPreIntegratedVdotLGGX(float3 V, float3 iblR, float iblPerceptualRoughness, out float VdotL_mean, out float VdotL_var)
 {
-    V = normalize(V);
     float iblMipLevel = PerceptualRoughnessToMipmapLevel(iblPerceptualRoughness);
 
     float3 weightRGB = SAMPLE_TEXTURECUBE_LOD(_SkyTexture,  s_trilinear_clamp_sampler, iblR, iblMipLevel).rgb;
     float weight = dot(weightRGB, float3(0.2126, 0.7152, 0.0722));
 
-    float3 momentsX  = SAMPLE_TEXTURECUBE_LOD(_PreIntegratedWSdotL_X1_GGX,  s_trilinear_clamp_sampler, iblR, iblMipLevel).rgb;
+    float3 momentsX  = SAMPLE_TEXTURECUBE_LOD(_PreIntegratedWSdotL_X1_GGX, s_trilinear_clamp_sampler, iblR, iblMipLevel).rgb;
     float3 momentsX2 = SAMPLE_TEXTURECUBE_LOD(_PreIntegratedWSdotL_X2_GGX, s_trilinear_clamp_sampler, iblR, iblMipLevel).rgb;
     float3 momentsXY = SAMPLE_TEXTURECUBE_LOD(_PreIntegratedWSdotL_XY_GGX, s_trilinear_clamp_sampler, iblR, iblMipLevel).rgb;
 

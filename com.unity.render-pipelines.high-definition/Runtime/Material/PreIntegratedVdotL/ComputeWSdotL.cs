@@ -51,7 +51,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 for (int face = 0; face < 6; ++face)
                 {
-                    var faceSize = new Vector4(source.width, source.height, 1.0f / source.width, 1.0f / source.height);
+                    // Assume all targets same size!
+                    var faceSize = new Vector4(target1.width, target1.height, 1.0f / target1.width, 1.0f / target1.height);
                     var transform = HDUtils.ComputePixelCoordToWorldSpaceViewDirectionMatrix(0.5f * Mathf.PI, faceSize, m_faceWorldToViewMatrixMatrices[face], true);
 
                     props.SetMatrix(HDShaderIDs._PixelCoordToViewDirWS, transform);
