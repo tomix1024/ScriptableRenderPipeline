@@ -116,6 +116,28 @@ real3 F_FresnelConductor(real3 eta, real3 etak2, real cosTheta, out real3 Rp, ou
     return 0.5 * (Rp + Rs);
 }
 
+// Phase shift due to a conducting material.
+// See [A Practical Extension to Microfacet Theory for the Modeling of Varying Iridescence]
+// Their implementation apparently uses n = eta * (1 + i kappa), but is inconsistent on that.
+// We use n = eta + i kappa
+void FresnelConductorPhase(real cosTheta,
+                                real3 eta1,
+                                real3 eta2, real3 kappa2,
+                                out real3 phiP, out real3 phiS)
+{
+   real sinThetaSq = 1.0 - Sq(cosTheta);
+   real3 A = Sq(eta2) - Sq(kappa2) - Sq(eta1)*sinThetaSq;
+   real3 B = sqrt(Sq(A) + 4*Sq(eta2)*Sq(kappa2));
+   real3 USq = (A+B) / 2.0;
+   real3 VSq = (B-A) / 2.0;
+   real3 U = sqrt(USq);
+   real3 V = sqrt(VSq);
+
+   phiS = atan2(2*eta1*V*cosTheta, USq + VSq - Sq(eta1*cosTheta));
+   phiP = atan2(2*eta1*cosTheta * (2*eta2*kappa2*U - (Sq(eta2) - Sq(kappa2)) * V),
+                Sq((Sq(eta2)+Sq(kappa2))*cosTheta) - Sq(eta1)*B/*(USq+VSq)*/);
+}
+
 void ComplexSquareRoot(float3 sq_re, float3 sq_im, out float3 re, out float3 im)
 {
     float3 phi = atan2(sq_im, sq_re);
@@ -488,7 +510,7 @@ TEXTURE2D_ARRAY(_IridescenceSensitivityMap);
 SAMPLER(sampler_IridescenceSensitivityMap);
 real4 _IridescenceSensitivityMap_ST;
 
-real3 EvalSensitivityTable(real opd, real phi, real opdSigma = 0)
+real3 EvalSensitivityTable(real opd, real3 phi, real opdSigma = 0)
 {
     real3 result;
     real2 uv = TRANSFORM_TEX(real2(opd, opdSigma), _IridescenceSensitivityMap);
@@ -497,7 +519,7 @@ real3 EvalSensitivityTable(real opd, real phi, real opdSigma = 0)
         real2 magsqrt_phase = SAMPLE_TEXTURE2D_ARRAY_LOD(_IridescenceSensitivityMap, sampler_IridescenceSensitivityMap, uv, index, 0).rg;
         real mag = Sq(magsqrt_phase.r);
         real phase = magsqrt_phase.g;
-        result[index] = mag * cos(phase - phi);
+        result[index] = mag * cos(phase - phi[index]);
         ///   cos(phase - phi)
         /// = cos(phase) * cos(phi) + sin(phase) * sin(phi)
     }
@@ -640,9 +662,28 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     real3 T12p = 1.0 - R12p;
     real3 T12s = 1.0 - R12s;
 
+    real phi21p = PI;
+    real phi21s = PI;
+#ifdef IRIDESCENCE_USE_PHASE_SHIFT
+    phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
+    phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
+#endif // IRIDESCENCE_USE_PHASE_SHIFT
+
+
     // Second interface
     real3 R23p, R23s;
     F_FresnelConductor(eta3/eta2, kappa3/eta2, cosTheta2, R23p, R23s);
+
+    real3 phi23p = float3(0,0,0);
+    real3 phi23s = float3(0,0,0);
+#ifdef IRIDESCENCE_USE_PHASE_SHIFT
+    FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
+#endif // IRIDESCENCE_USE_PHASE_SHIFT
+
+
+    // Phase
+    real3 phi2p = phi21p + phi23p;
+    real3 phi2s = phi21s + phi23s;
 
     // Compound terms
     real3 R123p = R12p * R23p;
@@ -665,11 +706,11 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     for (int m = 1; m <= 2; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi2p, m * OPDSigma);
         Ip += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi2s, m * OPDSigma);
         Is += Cms * Sms;
     }
 
@@ -716,18 +757,31 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     F_FresnelConductor(eta2/eta1, 0, cosTheta1, R12p, R12s);
     real3 T12p = 1.0 - R12p;
     real3 T12s = 1.0 - R12s;
-    real phi12 = 0.0;
-    real phi21 = phi12 + PI; // TODO: rotate 180 degree?!
+
+    real phi21p = PI;
+    real phi21s = PI;
+#ifdef IRIDESCENCE_USE_PHASE_SHIFT
+    phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
+    phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
+#endif // IRIDESCENCE_USE_PHASE_SHIFT
+
 
     // Second interface
     real3 R23p, R23s;
     F_FresnelConductor(eta3/eta2, kappa3/eta2, cosTheta2, R23p, R23s);
-    real  phi23 = 0.0;
+
+    real3 phi23p = float3(0,0,0);
+    real3 phi23s = float3(0,0,0);
+#ifdef IRIDESCENCE_USE_PHASE_SHIFT
+    FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
+#endif // IRIDESCENCE_USE_PHASE_SHIFT
+
 
     // Phase shift
     real OPD = Dinc * cosTheta2;
     real OPDSigma = Dinc * sqrt(cosTheta2Var); // cf. Kalman filter
-    real phi = phi21 + phi23;
+    real3 phi2p = phi21p + phi23p;
+    real3 phi2s = phi21s + phi23s;
 
     // Compound terms
     real3 R123p = R12p * R23p;
@@ -750,11 +804,11 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     for (int m = 1; m <= 2; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi2p, m * OPDSigma);
         Ip += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi, m * OPDSigma);
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi2s, m * OPDSigma);
         Is += Cms * Sms;
     }
 

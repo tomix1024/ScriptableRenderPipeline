@@ -20,6 +20,8 @@ Shader "HDRenderPipeline/Iridescence"
         [Toggle(IRIDESCENCE_USE_UKF)]_IridescenceUseUKF("Use UKF", Float) = 0.0
         _IridescenceUKFLambda("UKF Lambda", Range(0.0, 2.0)) = 1.0
 
+        [Toggle(IRIDESCENCE_USE_PHASE_SHIFT)]_IridescenceUsePhaseShift("Use Phase Shifts", Float) = 0.0
+
         _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0
         _ReferenceUseMeanVdotH("Ref Mean VdotH", Range(0.0, 1.0)) = 0.0
@@ -114,6 +116,7 @@ Shader "HDRenderPipeline/Iridescence"
     #pragma shader_feature _ IRIDESCENCE_USE_VDOTH_VAR
 
     #pragma shader_feature _ IRIDESCENCE_USE_UKF
+    #pragma shader_feature _ IRIDESCENCE_USE_PHASE_SHIFT
 
     //-------------------------------------------------------------------------------------
     // Define
