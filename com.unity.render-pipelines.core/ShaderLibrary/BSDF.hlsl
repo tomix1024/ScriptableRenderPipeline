@@ -125,17 +125,17 @@ void FresnelConductorPhase(real cosTheta,
                                 real3 eta2, real3 kappa2,
                                 out real3 phiP, out real3 phiS)
 {
-   real sinThetaSq = 1.0 - Sq(cosTheta);
-   real3 A = Sq(eta2) - Sq(kappa2) - Sq(eta1)*sinThetaSq;
-   real3 B = sqrt(Sq(A) + 4*Sq(eta2)*Sq(kappa2));
-   real3 USq = (A+B) / 2.0;
-   real3 VSq = (B-A) / 2.0;
-   real3 U = sqrt(USq);
-   real3 V = sqrt(VSq);
+    real sinThetaSq = 1.0 - Sq(cosTheta);
+    real3 A = Sq(eta2) - Sq(kappa2) - Sq(eta1)*sinThetaSq;
+    real3 B = sqrt(Sq(A) + 4*Sq(eta2)*Sq(kappa2));
+    real3 USq = (A+B) / 2.0;
+    real3 VSq = (B-A) / 2.0;
+    real3 U = sqrt(USq);
+    real3 V = sqrt(VSq);
 
-   phiS = atan2(2*eta1*V*cosTheta, USq + VSq - Sq(eta1*cosTheta));
-   phiP = atan2(2*eta1*cosTheta * (2*eta2*kappa2*U - (Sq(eta2) - Sq(kappa2)) * V),
-                Sq((Sq(eta2)+Sq(kappa2))*cosTheta) - Sq(eta1)*B/*(USq+VSq)*/);
+    phiS = atan2(-2*eta1*V*cosTheta, Sq(eta1*cosTheta) - USq - VSq);
+    phiP = atan2(2*eta1*cosTheta * (2*eta2*kappa2*U - (Sq(eta2) - Sq(kappa2)) * V),
+                 Sq((Sq(eta2)+Sq(kappa2))*cosTheta) - Sq(eta1)*B/*(USq+VSq)*/);
 }
 
 void ComplexSquareRoot(float3 sq_re, float3 sq_im, out float3 re, out float3 im)
