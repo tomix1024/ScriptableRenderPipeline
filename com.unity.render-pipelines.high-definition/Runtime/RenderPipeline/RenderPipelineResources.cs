@@ -83,6 +83,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             public Shader preIntegratedFGD_WardPS;
             public Shader preIntegratedFGD_CookTorrancePS;
             public Shader preIntegratedVdotH_GGXPS;
+            public Shader preIntegratedVdotL_GGXPS;
 
             // Utilities / Core
             public ComputeShader encodeBC6HCS;
@@ -222,6 +223,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 preIntegratedFGD_WardPS = Load<Shader>(HDRenderPipelinePath + "Material/AxF/PreIntegratedFGD_Ward.shader"),
 
                 preIntegratedVdotH_GGXPS = Load<Shader>(HDRenderPipelinePath + "Material/PreIntegratedVdotH/preIntegratedVdotH_GGX.shader"),
+                preIntegratedVdotL_GGXPS = Load<Shader>(HDRenderPipelinePath + "Material/PreIntegratedVdotL/preIntegratedVdotL_GGX.shader"),
 
                 // Utilities / Core
                 encodeBC6HCS = Load<ComputeShader>(CorePath + "CoreResources/EncodeBC6H.compute"),

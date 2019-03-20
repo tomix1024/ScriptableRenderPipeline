@@ -87,6 +87,8 @@ MonoBehaviour:
       type: 3}
     preIntegratedVdotH_GGXPS: {fileID: 4800000, guid: 94dcf2f55f36f3b5fa119e0b4d059259,
       type: 3}
+    preIntegratedVdotL_GGXPS: {fileID: 4800000, guid: 5b29e825c0d9f2b8fab1e959b6185389,
+      type: 3}
     encodeBC6HCS: {fileID: 7200000, guid: aa922d239de60304f964e24488559eeb, type: 3}
     cubeToPanoPS: {fileID: 4800000, guid: 595434cc3b6405246b6cd3086d0b6f7d, type: 3}
     blitCubeTextureFacePS: {fileID: 4800000, guid: d850d0a2481878d4bbf17e5126b04163,

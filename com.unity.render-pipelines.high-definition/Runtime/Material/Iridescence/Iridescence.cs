@@ -82,6 +82,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             PreIntegratedFGD.instance.Build(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             PreIntegratedVdotH.instance.Build();
+            PreIntegratedVdotL.instance.Build();
             LTCAreaLight.instance.Build();
         }
 
@@ -89,6 +90,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             PreIntegratedFGD.instance.Cleanup(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             PreIntegratedVdotH.instance.Cleanup();
+            PreIntegratedVdotL.instance.Cleanup();
             LTCAreaLight.instance.Cleanup();
         }
 
@@ -96,12 +98,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             PreIntegratedFGD.instance.RenderInit(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse, cmd);
             PreIntegratedVdotH.instance.RenderInit(cmd);
+            PreIntegratedVdotL.instance.RenderInit(cmd);
         }
 
         public override void Bind()
         {
             PreIntegratedFGD.instance.Bind(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             PreIntegratedVdotH.instance.Bind();
+            PreIntegratedVdotL.instance.Bind();
             LTCAreaLight.instance.Bind();
         }
     }
