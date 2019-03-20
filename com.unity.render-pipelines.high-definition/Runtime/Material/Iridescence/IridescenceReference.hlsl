@@ -74,6 +74,13 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
     float preVdotH = lerp(NdotV, VdotH_mean, _ReferenceUseMeanVdotH);
     float preVdotHVar = lerp(0, VdotH_var, _ReferenceUseVarVdotH);
 
+    #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
+        // Override VdotH mean and variance from VdotL distribution
+        preVdotH = sqrt(0.5 * (1 + VdotL_mean));
+        preVdotHVar = 0.25 / (1.0 + VdotL_mean) * VdotL_var;
+    #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
+
+
     // Compute color
     for (uint i = 0; i < sampleCount; ++i)
     {

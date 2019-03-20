@@ -261,6 +261,17 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float VdotH_mean = VdotH_moments.y;
         float VdotH_var = max(0, VdotH_moments.z - VdotH_mean * VdotH_mean);
 
+        float VdotL_mean;
+        float VdotL_var;
+        GetPreIntegratedVdotLGGX(V, preLightData.iblR, preLightData.iblPerceptualRoughness, VdotL_mean, VdotL_var);
+        VdotL_var = lerp(0, VdotL_var, _IBLUseVarVdotH);
+
+    #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
+        // Override VdotH mean and variance from VdotL distribution
+        VdotH_mean = sqrt(0.5 * (1 + VdotL_mean));
+        VdotH_var = 0.25 / (1.0 + VdotL_mean) * VdotL_var;
+    #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
+
 
         float viewAngle = lerp(NdotV, VdotH_mean, _IBLUseMeanVdotH); // NOTE: THIS IS NOT GENERALLY THE CASE!
         float viewAngleVar = lerp(0, VdotH_var, _IBLUseVarVdotH);
@@ -274,13 +285,6 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float OPD, OPDSigma, phi;
 
     #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
-
-        float VdotL_mean;
-        float VdotL_var;
-        GetPreIntegratedVdotLGGX(V, preLightData.iblR, preLightData.iblPerceptualRoughness, VdotL_mean, VdotL_var);
-
-        VdotL_var = lerp(0, VdotL_var, _IBLUseVarVdotH);
-
         EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma, phi);
     #else
         EvalOpticalPathDifference(eta1, viewAngle, viewAngleVar, eta2, thickness, OPD, OPDSigma, phi);
