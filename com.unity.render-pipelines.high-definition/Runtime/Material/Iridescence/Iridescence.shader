@@ -41,6 +41,9 @@ Shader "HDRenderPipeline/Iridescence"
         // _NormalMap("NormalMap", 2D) = "bump" {}     // Tangent space normal map
         // _NormalScale("_NormalScale", Range(0.0, 8.0)) = 1
 
+        [Toggle(IRIDESCENCE_USE_THICKNESS_MAP)]_IridescenceUseThicknessMap("Use Thickness Map", Float) = 0
+        _IridescenceThicknessMap("Iridescence Thickness Map", 2D) = "white" {}
+
         _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 3.0)) = 1.0
         _IridescenceEta2("Iridescence Eta 2", Range(1.0, 5.0)) = 1.21
         _IridescenceEta3("Iridescence Eta 3", Range(1.0, 5.0)) = 2.0
@@ -108,6 +111,7 @@ Shader "HDRenderPipeline/Iridescence"
     #pragma shader_feature _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
     #pragma multi_compile _ IRIDESCENCE_REFERENCE_USE_VDOTL
 
+    #pragma shader_feature _ IRIDESCENCE_USE_THICKNESS_MAP
 
     #pragma shader_feature _ IRIDESCENCE_USE_PREINTEGRATED_IBLR
     #pragma shader_feature _ IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS

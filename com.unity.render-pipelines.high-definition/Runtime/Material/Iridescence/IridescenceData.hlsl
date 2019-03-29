@@ -22,6 +22,13 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     surfaceData.iridescenceEta3 = _IridescenceEta3;
     surfaceData.iridescenceKappa3 = _IridescenceKappa3;
 
+    // Apply offset and tiling
+    float2 uvThickness = input.texCoord0.xy * _IridescenceThicknessMap_ST.xy + _IridescenceThicknessMap_ST.zw;
+
+#ifdef IRIDESCENCE_USE_THICKNESS_MAP
+    surfaceData.iridescenceThickness *= SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvThickness).x;
+#endif // IRIDESCENCE_USE_THICKNESS_MAP
+
 #if defined(DEBUG_DISPLAY)
     if (_DebugMipMapMode != DEBUGMIPMAPMODE_NONE)
     {

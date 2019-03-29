@@ -7,6 +7,9 @@
 // TEXTURE2D(_NormalMap);
 // SAMPLER(sampler_NormalMap);
 
+TEXTURE2D(_IridescenceThicknessMap);
+SAMPLER(sampler_IridescenceThicknessMap);
+
 CBUFFER_START(UnityPerMaterial)
 
 // shared constant between lit and layered lit
@@ -21,6 +24,8 @@ float _Smoothness;
 float4 _Fresnel0;
 
 // float _NormalScale;
+
+float4 _IridescenceThicknessMap_ST;
 
 float _IridescenceThickness;
 float _IridescenceEta2;
