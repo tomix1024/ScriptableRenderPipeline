@@ -608,16 +608,16 @@ real3 EvalIridescence(real eta_1, real cosTheta1, real iridescenceThickness, rea
 
 void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, out real OPD, out real OPDSigma, out real phi)
 {
-    // layerThickness unit is micrometer for this equation here. Mean 0.5 is 500nm.
-    real Dinc = 3.0 * layerThickness;
+    // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
+    real Dinc = layerThickness;
 
     real sinTheta2Sq = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
     real cosTheta2 = sqrt(1.0 - sinTheta2Sq);
     real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1))); // cf. EKF
 
     // Phase shift
-    OPD = Dinc * cosTheta2;
-    OPDSigma = Dinc * sqrt(cosTheta2Var);
+    OPD = 2*eta2 * Dinc * cosTheta2;
+    OPDSigma = 2*eta2 * Dinc * sqrt(cosTheta2Var);
 
     // TODO compute correct phi!!
     phi = PI;
@@ -625,16 +625,16 @@ void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, rea
 
 void EvalOpticalPathDifferenceVdotL(real eta1, real VdotL, real VdotLVar, real eta2, real layerThickness, out real OPD, out real OPDSigma, out real phi)
 {
-    // layerThickness unit is micrometer for this equation here. Mean 0.5 is 500nm.
-    real Dinc = 3.0 * layerThickness;
+    // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
+    real Dinc = layerThickness;
 
     real sinTheta2Sq = 0.5 * Sq(eta1 / eta2) * (1.0 - VdotL);
     real cosTheta2 = sqrt(1.0 - sinTheta2Sq);
     real cosTheta2Var = VdotLVar * Sq( 0.25 * Sq(eta1 / eta2) ) / (1 - 0.5 * Sq(eta1 / eta2) * (1 - VdotL)); // cf. EKF
 
     // Phase shift
-    OPD = Dinc * cosTheta2;
-    OPDSigma = Dinc * sqrt(cosTheta2Var);
+    OPD = 2*eta2 * Dinc * cosTheta2;
+    OPDSigma = 2*eta2 * Dinc * sqrt(cosTheta2Var);
 
     // TODO compute correct phi!!
     phi = PI;
@@ -724,8 +724,9 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
 // Evaluate the reflectance for a thin-film layer on top of a conducting medum.
 real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, real3 eta3, real3 kappa3, real use_ukf, real ukf_lambda)
 {
-    // layerThickness unit is micrometer for this equation here. Mean 0.5 is 500nm.
-    real Dinc = 3.0 * layerThickness;
+    // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
+    real Dinc = layerThickness;
+
 
     // Following line from original code is not needed for us, it create a discontinuity
     // Force eta_2 -> eta_1 when Dinc -> 0.0
@@ -778,8 +779,8 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
 
 
     // Phase shift
-    real OPD = Dinc * cosTheta2;
-    real OPDSigma = Dinc * sqrt(cosTheta2Var); // cf. Kalman filter
+    real OPD = 2*eta2 * Dinc * cosTheta2;
+    real OPDSigma = 2*eta2 * Dinc * sqrt(cosTheta2Var); // cf. Kalman filter
     real3 phi2p = phi21p + phi23p;
     real3 phi2s = phi21s + phi23s;
 

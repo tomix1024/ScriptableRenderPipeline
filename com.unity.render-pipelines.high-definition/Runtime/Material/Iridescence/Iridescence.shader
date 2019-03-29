@@ -41,7 +41,7 @@ Shader "HDRenderPipeline/Iridescence"
         // _NormalMap("NormalMap", 2D) = "bump" {}     // Tangent space normal map
         // _NormalScale("_NormalScale", Range(0.0, 8.0)) = 1
 
-        _IridescenceThickness("Iridescence Thickness", Range(0.0, 1.0)) = 1.0
+        _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 3.0)) = 1.0
         _IridescenceEta2("Iridescence Eta 2", Range(1.0, 5.0)) = 1.21
         _IridescenceEta3("Iridescence Eta 3", Range(1.0, 5.0)) = 2.0
         _IridescenceKappa3("Iridescence Kappa 3", Range(0.0, 5.0)) = 0.0

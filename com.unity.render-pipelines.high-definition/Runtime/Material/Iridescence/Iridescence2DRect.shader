@@ -5,7 +5,7 @@ Shader "HDRenderPipeline/Iridescence2DRect"
         [Toggle(IRIDESCENCE_USE_PREFILTERED_VDOTH)]_IridescenceVdotH("Prefiltered VdotH", Float) = 0
         [Toggle(IRIDESCENCE_USE_PREFILTERED_VDOTL)]_IridescenceVdotL("Prefiltered VdotL", Float) = 0
 
-        _IridescenceThickness("Iridescence Thickness", Range(0.0, 1.0)) = 1.0
+        _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 3.0)) = 1.0
         _IridescenceEta2("Iridescence Eta 2", Range(1.0, 5.0)) = 1.21
         _IridescenceEta3("Iridescence Eta 3", Range(1.0, 5.0)) = 2.0
         _IridescenceKappa3("Iridescence Kappa 3", Range(0.0, 5.0)) = 0.0
