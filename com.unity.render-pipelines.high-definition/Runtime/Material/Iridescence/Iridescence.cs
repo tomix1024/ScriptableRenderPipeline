@@ -80,6 +80,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public override void Build(HDRenderPipelineAsset hdAsset)
         {
+            LoadSpectralSensitivity.instance.Build();
             PreIntegratedFGD.instance.Build(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             PreIntegratedVdotH.instance.Build();
             PreIntegratedVdotL.instance.Build();
@@ -88,6 +89,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public override void Cleanup()
         {
+            LoadSpectralSensitivity.instance.Cleanup();
             PreIntegratedFGD.instance.Cleanup(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             PreIntegratedVdotH.instance.Cleanup();
             PreIntegratedVdotL.instance.Cleanup();
@@ -96,6 +98,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public override void RenderInit(CommandBuffer cmd)
         {
+            LoadSpectralSensitivity.instance.RenderInit(cmd);
             PreIntegratedFGD.instance.RenderInit(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse, cmd);
             PreIntegratedVdotH.instance.RenderInit(cmd);
             PreIntegratedVdotL.instance.RenderInit(cmd);
@@ -103,6 +106,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public override void Bind()
         {
+            LoadSpectralSensitivity.instance.Bind();
             PreIntegratedFGD.instance.Bind(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             PreIntegratedVdotH.instance.Bind();
             PreIntegratedVdotL.instance.Bind();
