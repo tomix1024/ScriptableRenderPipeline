@@ -111,15 +111,15 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
             float viewAngleCoeffsVar = lerp(preVdotHVar, 0, _ReferenceUseCorrectCoeffs);
 
             // float3 F = EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
-            float OPD, OPDSigma, phi;
+            float OPD, OPDSigma;
 
         #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
-            EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma, phi);
+            EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma);
         #else
-            EvalOpticalPathDifference(eta1, viewAngleOPD, viewAngleOPDVar, eta2, thickness, OPD, OPDSigma, phi);
+            EvalOpticalPathDifference(eta1, viewAngleOPD, viewAngleOPDVar, eta2, thickness, OPD, OPDSigma);
         #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
 
-            float3 F = EvalIridescenceCorrectOPD(eta1, viewAngleCoeffs, viewAngleCoeffsVar, eta2, eta3, kappa3, OPD, OPDSigma, phi);
+            float3 F = EvalIridescenceCorrectOPD(eta1, viewAngleCoeffs, viewAngleCoeffsVar, eta2, eta3, kappa3, OPD, OPDSigma);
 
             float3 FweightOverPdf = F * weightOverPdf;
 

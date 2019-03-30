@@ -606,7 +606,7 @@ real3 EvalIridescence(real eta_1, real cosTheta1, real iridescenceThickness, rea
     return I;
 }
 
-void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, out real OPD, out real OPDSigma, out real phi)
+void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, out real OPD, out real OPDSigma)
 {
     // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
     real Dinc = layerThickness;
@@ -618,12 +618,9 @@ void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, rea
     // Phase shift
     OPD = 2*eta2 * Dinc * cosTheta2;
     OPDSigma = 2*eta2 * Dinc * sqrt(cosTheta2Var);
-
-    // TODO compute correct phi!!
-    phi = PI;
 }
 
-void EvalOpticalPathDifferenceVdotL(real eta1, real VdotL, real VdotLVar, real eta2, real layerThickness, out real OPD, out real OPDSigma, out real phi)
+void EvalOpticalPathDifferenceVdotL(real eta1, real VdotL, real VdotLVar, real eta2, real layerThickness, out real OPD, out real OPDSigma)
 {
     // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
     real Dinc = layerThickness;
@@ -635,12 +632,9 @@ void EvalOpticalPathDifferenceVdotL(real eta1, real VdotL, real VdotLVar, real e
     // Phase shift
     OPD = 2*eta2 * Dinc * cosTheta2;
     OPDSigma = 2*eta2 * Dinc * sqrt(cosTheta2Var);
-
-    // TODO compute correct phi!!
-    phi = PI;
 }
 
-real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, real OPD, real OPDSigma, real phi)
+real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, real OPD, real OPDSigma)
 {
     // Following line from original code is not needed for us, it create a discontinuity
     // Force eta_2 -> eta_1 when Dinc -> 0.0

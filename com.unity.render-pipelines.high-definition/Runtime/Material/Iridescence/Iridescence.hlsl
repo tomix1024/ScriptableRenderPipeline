@@ -283,15 +283,15 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float3 kappa3 = bsdfData.iridescenceKappa3;
 
         // iridescenceFGD = EvalIridescenceCorrect(eta1, viewAngle, viewAngleVar, eta2, thickness, eta3, kappa3, _IridescenceUseUKF, _IridescenceUKFLambda);
-        float OPD, OPDSigma, phi;
+        float OPD, OPDSigma;
 
     #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
-        EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma, phi);
+        EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma);
     #else
-        EvalOpticalPathDifference(eta1, viewAngle, viewAngleVar, eta2, thickness, OPD, OPDSigma, phi);
+        EvalOpticalPathDifference(eta1, viewAngle, viewAngleVar, eta2, thickness, OPD, OPDSigma);
     #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
 
-        iridescenceFGD = EvalIridescenceCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma, phi);
+        iridescenceFGD = EvalIridescenceCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma);
     }
 
     float specularReflectivity;

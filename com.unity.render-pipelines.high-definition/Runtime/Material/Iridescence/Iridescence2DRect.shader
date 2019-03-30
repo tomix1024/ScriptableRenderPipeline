@@ -179,9 +179,9 @@ Shader "HDRenderPipeline/Iridescence2DRect"
                         float3 eta3 = data.iridescenceEta3;
                         float3 kappa3 = data.iridescenceKappa3;
 
-                        float OPD, OPDSigma, phi;
-                        EvalOpticalPathDifference(eta1, VdotH, 0, eta2, thickness, OPD, OPDSigma, phi);
-                        float3 F = EvalIridescenceCorrectOPD(eta1, VdotH, 0, eta2, eta3, kappa3, OPD, OPDSigma, phi);
+                        float OPD, OPDSigma;
+                        EvalOpticalPathDifference(eta1, VdotH, 0, eta2, thickness, OPD, OPDSigma);
+                        float3 F = EvalIridescenceCorrectOPD(eta1, VdotH, 0, eta2, eta3, kappa3, OPD, OPDSigma);
 
                         float3 FweightOverPdf = F * weightOverPdf;
 
@@ -247,14 +247,14 @@ Shader "HDRenderPipeline/Iridescence2DRect"
                 float3 eta3 = data.iridescenceEta3;
                 float3 kappa3 = data.iridescenceKappa3;
 
-                float OPD, OPDSigma, phi;
+                float OPD, OPDSigma;
             #ifdef IRIDESCENCE_USE_PREFILTERED_VDOTL
-                EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma, phi);
+                EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma);
             #else
-                EvalOpticalPathDifference(eta1, VdotH_mean, VdotH_var, eta2, thickness, OPD, OPDSigma, phi);
+                EvalOpticalPathDifference(eta1, VdotH_mean, VdotH_var, eta2, thickness, OPD, OPDSigma);
             #endif // IRIDESCENCE_USE_PREFILTERED_VDOTL
 
-                float3 iridescenceF = EvalIridescenceCorrectOPD(eta1, VdotH_mean, VdotH_var, eta2, eta3, kappa3, OPD, OPDSigma, phi);
+                float3 iridescenceF = EvalIridescenceCorrectOPD(eta1, VdotH_mean, VdotH_var, eta2, eta3, kappa3, OPD, OPDSigma);
 
 
 
