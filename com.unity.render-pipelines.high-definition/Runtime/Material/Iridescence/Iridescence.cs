@@ -33,6 +33,7 @@ namespace UnityEngine.Rendering.HighDefinition
             // Iridescence
             [SurfaceDataAttributes("Iridescence Layer Thickness", precision = FieldPrecision.Real)]
             public float iridescenceThickness;
+            public Vector4 iridescenceThicknessSphereModel;
 
             [SurfaceDataAttributes("Iridescence Layer Eta", precision = FieldPrecision.Real)]
             public float iridescenceEta2;
@@ -72,6 +73,8 @@ namespace UnityEngine.Rendering.HighDefinition
             // Iridescence
             [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float iridescenceThickness;
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
+            public Vector4 iridescenceThicknessSphereModel;
             [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float iridescenceEta2;
             [SurfaceDataAttributes(precision = FieldPrecision.Real)]

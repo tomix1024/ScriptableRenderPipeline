@@ -36,6 +36,8 @@ float _IridescenceEta2;
 float _IridescenceEta3;
 float _IridescenceKappa3;
 
+float4 _RayMask;
+
 
 // Following two variables are feeded by the C++ Editor for Scene selection
 int _ObjectId;

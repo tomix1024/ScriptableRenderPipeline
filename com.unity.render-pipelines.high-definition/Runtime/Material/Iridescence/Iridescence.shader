@@ -18,7 +18,7 @@ Shader "HDRP/Iridescence"
         _IridescenceThicknessMap("Iridescence Thickness Map", 2D) = "white" {}
         _IridescenceThicknessMapScale("Iridescence Thickness Map Scale (µm)", Range(0.0, 3.0)) = 1.0
 
-        _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 3.0)) = 1.0
+        _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 10.0)) = 1.0
         _IridescenceEta2("Iridescence Eta 2", Range(1.0, 5.0)) = 1.21
         _IridescenceEta3("Iridescence Eta 3", Range(1.0, 5.0)) = 2.0
         _IridescenceKappa3("Iridescence Kappa 3", Range(0.0, 5.0)) = 0.0
@@ -34,6 +34,10 @@ Shader "HDRP/Iridescence"
         [Toggle(IRIDESCENCE_USE_PHASE_SHIFT)]_IridescenceUsePhaseShift("Use Phase Shifts", Float) = 1.0
 
         [Toggle(IRIDESCENCE_USE_GAUSSIAN_FIT)]_IridescenceUseGaussianFit("Use Gaussian Fit", Float) = 0.0
+
+        [Toggle(IRIDESCENCE_ENABLE_TRANSMISSION)]_IridescenceEnableTransmission("Enable Transmission", Float) = 0.0
+        [Toggle(IRIDESCENCE_TRANSPARENT_SPHERE)]_IridescenceTransparentSphere("Enable Transparent Sphere Model", Float) = 0.0
+        _RayMask("Ray Mask", Vector) = (1,1,1,1)
 
         _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0
@@ -66,17 +70,18 @@ Shader "HDRP/Iridescence"
 
         // Blending state
         [HideInInspector] _SurfaceType("__surfacetype", Float) = 0.0
-        [HideInInspector] _BlendMode("__blendmode", Float) = 0.0
         [HideInInspector] _SrcBlend("__src", Float) = 1.0
         [HideInInspector] _DstBlend("__dst", Float) = 0.0
         [HideInInspector] _ZWrite("__zw", Float) = 1.0
-        [Enum(Both, 0, Back, 1, Front, 2)]_CullMode("Cull Mode", Float) = 2
+        [HideInInspector] _CullMode("Cull Mode", Float) = 2
         [HideInInspector] _ZTestDepthEqualForOpaque("_ZTestDepthEqualForOpaque", Int) = 4 // Less equal
         [HideInInspector] _ZTestModeDistortion("_ZTestModeDistortion", Int) = 8
         [HideInInspector] _ZTestGBuffer("_ZTestGBuffer", Int) = 4
 
-        [Toggle(_DOUBLESIDED_ON)] _DoubleSidedEnable("Double sided enable", Float) = 0.0
-        [Enum(Flip, 0, Mirror, 1, None, 2)] _DoubleSidedNormalMode("Double sided normal mode", Float) = 1
+        [HideInInspector][ToggleUI] _ScreenSpaceTransmission("Screen space transmission", Float) = 0.0
+
+        [HideInInspector][ToggleUI] _DoubleSidedEnable("Double sided enable", Float) = 0.0
+        [HideInInspector] _DoubleSidedNormalMode("Double sided normal mode", Float) = 1
         [HideInInspector] _DoubleSidedConstants("_DoubleSidedConstants", Vector) = (1, 1, -1, 0)
 
         // HACK: GI Baking system relies on some properties existing in the shader ("_MainTex", "_Cutoff" and "_Color") for opacity handling, so we need to store our version of those parameters in the hard-coded name the GI baking system recognizes.
@@ -102,6 +107,13 @@ Shader "HDRP/Iridescence"
 
     #pragma shader_feature LIT_USE_GGX_ENERGY_COMPENSATION
 
+    // Keyword for transparent
+    #pragma shader_feature _SURFACE_TYPE_TRANSPARENT
+    // We do not rely on any special treatment for blending...
+    // #pragma shader_feature _ _BLENDMODE_ALPHA _BLENDMODE_ADD _BLENDMODE_PRE_MULTIPLY
+    // #pragma shader_feature _BLENDMODE_PRESERVE_SPECULAR_LIGHTING // easily handled in material.hlsl, so adding this already.
+    #pragma shader_feature _ENABLE_FOG_ON_TRANSPARENT
+
     //enable GPU instancing support
     #pragma multi_compile_instancing
 
@@ -110,6 +122,9 @@ Shader "HDRP/Iridescence"
     #pragma shader_feature _ IRIDESCENCE_DISPLAY_REFERENCE_IBL_16 IRIDESCENCE_DISPLAY_REFERENCE_IBL_256 IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048 IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K
     #pragma shader_feature _ IRIDESCENCE_VARIABLE_TERMS
     #pragma shader_feature _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
+
+    #pragma shader_feature _ IRIDESCENCE_ENABLE_TRANSMISSION
+    #pragma shader_feature _ IRIDESCENCE_TRANSPARENT_SPHERE
 
     #pragma shader_feature _ IRIDESCENCE_USE_THICKNESS_MAP
 
@@ -304,6 +319,49 @@ Shader "HDRP/Iridescence"
             ENDHLSL
         }
 
+        // Caution: Order is important: TransparentBackface, then Forward/ForwardOnly
+        Pass
+        {
+            Name "TransparentBackface"
+            Tags { "LightMode" = "TransparentBackface" }
+
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
+            Cull Front
+
+            HLSLPROGRAM
+
+            #pragma multi_compile _ DEBUG_DISPLAY
+            #pragma multi_compile _ LIGHTMAP_ON
+            #pragma multi_compile _ DIRLIGHTMAP_COMBINED
+            #pragma multi_compile _ DYNAMICLIGHTMAP_ON
+            #pragma multi_compile _ SHADOWS_SHADOWMASK
+            // Setup DECALS_OFF so the shader stripper can remove variants
+            // #pragma multi_compile DECALS_OFF DECALS_3RT DECALS_4RT
+            
+            // Supported shadow modes per light type
+            #pragma multi_compile PUNCTUAL_SHADOW_LOW PUNCTUAL_SHADOW_MEDIUM PUNCTUAL_SHADOW_HIGH
+            #pragma multi_compile DIRECTIONAL_SHADOW_LOW DIRECTIONAL_SHADOW_MEDIUM DIRECTIONAL_SHADOW_HIGH
+
+            // #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Lighting/Forward.hlsl"
+            //#pragma multi_compile LIGHTLOOP_SINGLE_PASS LIGHTLOOP_TILE_PASS
+            #define LIGHTLOOP_TILE_PASS
+            #pragma multi_compile USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
+
+            #define SHADERPASS SHADERPASS_FORWARD
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
+            #ifdef DEBUG_DISPLAY
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
+            #endif
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
+
+            #include "ShaderPass/IridescenceSharePass.hlsl"
+            #include "IridescenceData.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassForward.hlsl"
+
+            ENDHLSL
+        }
+
         // Iridescence shader always renders in forward
         Pass
         {
@@ -375,5 +433,5 @@ Shader "HDRP/Iridescence"
 
     }
 
-    // CustomEditor "Experimental.Rendering.HDPipeline.IridescenceGUI"
+    CustomEditor "Experimental.Rendering.HDPipeline.IridescenceGUI"
 }
