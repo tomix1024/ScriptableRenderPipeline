@@ -212,8 +212,12 @@ struct PreLightData
     float3 iblR;                     // Reflected specular direction, used for IBL in EvaluateBSDF_Env()
     float  iblPerceptualRoughness;
 
+    // NOTE: Does not depend on microfacet orientation! always roughness = 0
+    float3 iblT;                     // Transmitted specular direction, used for IBL in EvaluateBSDF_Env()
+
     float3 specularFGD;              // Store preintegrated BSDF for both specular and diffuse
     float  diffuseFGD;
+    float3 transmissiveFGD;          // FGD for transmission through film
 
     // Area lights (17 VGPRs)
     // TODO: 'orthoBasisViewNormal' is just a rotation around the normal and should thus be just 1x VGPR.
@@ -243,6 +247,7 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
     float3 iblN = N;
     preLightData.iblR = reflect(-V, iblN);
+    preLightData.iblT = -V; // That's it
 
 
     // Modify iblR and iblPerceptualRoughness
@@ -255,6 +260,7 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
 
     float3 iridescenceFGD;
+    float3 iridescenceTransmissiveFGD;
     {
         float4 VdotH_moments;
         GetPreIntegratedVdotHGGX(NdotV, bsdfData.perceptualRoughness, VdotH_moments);
@@ -292,11 +298,13 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
 
         iridescenceFGD = EvalIridescenceCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma);
+        iridescenceTransmissiveFGD = EvalIridescenceTransmissionCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma);
     }
 
     float specularReflectivity;
     GetPreIntegratedFGDGGXAndDisneyDiffuse(NdotV, bsdfData.perceptualRoughness, bsdfData.fresnel0, preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);
     preLightData.specularFGD *= iridescenceFGD;
+    preLightData.transmissiveFGD = iridescenceTransmissiveFGD;
 
 #ifdef USE_DIFFUSE_LAMBERT_BRDF
     preLightData.diffuseFGD = 1.0;
@@ -736,6 +744,13 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
     }
 
 #endif // IRIDESCENCE_DISPLAY_REFERENCE_IBL
+
+
+#ifdef IRIDESCENCE_ENABLE_TRANSMISSION
+    // TODO transmission
+    envLighting += preLightData.transmissiveFGD * SampleEnv(lightLoopContext, lightData.envIndex, preLightData.iblT, 0);
+#endif // IRIDESCENCE_ENABLE_TRANSMISSION
+
 
     UpdateLightingHierarchyWeights(hierarchyWeight, weight);
     envLighting *= weight * lightData.multiplier;

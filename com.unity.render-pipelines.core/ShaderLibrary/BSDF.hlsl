@@ -715,6 +715,84 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     return 0.5 * I;
 }
 
+real3 EvalIridescenceTransmissionCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, real OPD, real OPDSigma)
+{
+    // Evaluate the cosTheta on the base layer (Snell law)
+    real sinTheta2 = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
+
+    // Handle TIR
+    if (sinTheta2 > 1.0)
+        return real3(1.0, 1.0, 1.0);
+
+    real cosTheta2 = sqrt(1.0 - sinTheta2);
+
+    // First interface
+    real3 R12p, R12s;
+    F_FresnelConductor(eta2/eta1, 0, cosTheta1, R12p, R12s);
+    real3 T12p = 1.0 - R12p;
+    real3 T12s = 1.0 - R12s;
+
+    real phi21p = PI;
+    real phi21s = PI;
+#ifdef IRIDESCENCE_USE_PHASE_SHIFT
+    phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
+    phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
+#endif // IRIDESCENCE_USE_PHASE_SHIFT
+
+
+    // Second interface
+    real3 R23p, R23s;
+    F_FresnelConductor(eta3/eta2, kappa3/eta2, cosTheta2, R23p, R23s);
+    real3 T23p = 1.0 - R23p;
+    real3 T23s = 1.0 - R23s;
+
+    real3 phi23p = float3(0,0,0);
+    real3 phi23s = float3(0,0,0);
+#ifdef IRIDESCENCE_USE_PHASE_SHIFT
+    FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
+#endif // IRIDESCENCE_USE_PHASE_SHIFT
+
+
+    // Phase
+    real3 phi2p = phi21p + phi23p;
+    real3 phi2s = phi21s + phi23s;
+
+    // Compound terms
+    real3 R123p = R12p * R23p;
+    real3 r123p = sqrt(R123p);
+    real3 Tstarp = T12p * T23p / (real3(1.0, 1.0, 1.0) - R123p);
+    real3 R123s = R12s * R23s;
+    real3 r123s = sqrt(R123s);
+    real3 Tstars = T12s * T23s / (real3(1.0, 1.0, 1.0) - R123s);
+
+    // Reflectance term for m = 0 (DC term amplitude)
+    real3 C0p = Tstarp;
+    real3 C0s = Tstars;
+    // real3 I = C0p + C0s;
+    real3 Ip = C0p;
+    real3 Is = C0s;
+
+    // Reflectance term for m > 0 (pairs of diracs)
+    real3 Cmp = C0p;
+    real3 Cms = C0s;
+    for (int m = 1; m <= 2; ++m)
+    {
+        Cmp *= r123p;
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi2p, m * OPDSigma);
+        Ip += Cmp * Smp;
+
+        Cms *= r123s;
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi2s, m * OPDSigma);
+        Is += Cms * Sms;
+    }
+
+    // This helps with black pixels:
+    real3 I = max(Is, float3(0,0,0)) + max(Ip, float3(0,0,0));
+
+    // TODO why do some directions return black values here!?
+    return 0.5 * I;
+}
+
 // Evaluate the reflectance for a thin-film layer on top of a conducting medum.
 real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, real3 eta3, real3 kappa3, real use_ukf, real ukf_lambda)
 {

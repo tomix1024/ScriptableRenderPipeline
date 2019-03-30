@@ -22,6 +22,8 @@ Shader "HDRenderPipeline/Iridescence"
 
         [Toggle(IRIDESCENCE_USE_PHASE_SHIFT)]_IridescenceUsePhaseShift("Use Phase Shifts", Float) = 0.0
 
+        [Toggle(IRIDESCENCE_ENABLE_TRANSMISSION)]_IridescenceEnableTransmission("Enable Transmission", Float) = 0.0
+
         _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0
         _ReferenceUseMeanVdotH("Ref Mean VdotH", Range(0.0, 1.0)) = 0.0
@@ -110,6 +112,8 @@ Shader "HDRenderPipeline/Iridescence"
     #pragma shader_feature _ IRIDESCENCE_DISPLAY_REFERENCE_IBL_16 IRIDESCENCE_DISPLAY_REFERENCE_IBL_256 IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048 IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K
     #pragma shader_feature _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
     #pragma multi_compile _ IRIDESCENCE_REFERENCE_USE_VDOTL
+
+    #pragma shader_feature _ IRIDESCENCE_ENABLE_TRANSMISSION
 
     #pragma shader_feature _ IRIDESCENCE_USE_THICKNESS_MAP
 
