@@ -634,7 +634,7 @@ void EvalOpticalPathDifferenceVdotL(real eta1, real VdotL, real VdotLVar, real e
     OPDSigma = 2*eta2 * Dinc * sqrt(cosTheta2Var);
 }
 
-real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, real OPD, real OPDSigma)
+real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, real OPD, real OPDSigma, bool use_phase_shift = true)
 {
     // Following line from original code is not needed for us, it create a discontinuity
     // Force eta_2 -> eta_1 when Dinc -> 0.0
@@ -658,10 +658,11 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
 
     real phi21p = PI;
     real phi21s = PI;
-#ifdef IRIDESCENCE_USE_PHASE_SHIFT
-    phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
-    phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
-#endif // IRIDESCENCE_USE_PHASE_SHIFT
+    if (use_phase_shift)
+    {
+        phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
+        phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
+    }
 
 
     // Second interface
@@ -670,9 +671,10 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
 
     real3 phi23p = float3(0,0,0);
     real3 phi23s = float3(0,0,0);
-#ifdef IRIDESCENCE_USE_PHASE_SHIFT
-    FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
-#endif // IRIDESCENCE_USE_PHASE_SHIFT
+    if (use_phase_shift)
+    {
+        FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
+    }
 
 
     // Phase
@@ -716,7 +718,7 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
 }
 
 // Evaluate the reflectance for a thin-film layer on top of a conducting medum.
-real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, real3 eta3, real3 kappa3, real use_ukf, real ukf_lambda)
+real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, real3 eta3, real3 kappa3, bool use_phase_shift = true, bool use_ukf = false, real ukf_lambda = 1.0)
 {
     // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
     real Dinc = layerThickness;
@@ -737,15 +739,15 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     real cosTheta2 = sqrt(1.0 - sinTheta2sq);
     real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1))); // cf. EKF
 
-    real3 sigmaWeights = real3(0.5, ukf_lambda, 0.5) / (1 + ukf_lambda);
-    real3 sigmaPoints = cosTheta1.xxx + sqrt((1 + ukf_lambda) * cosTheta1Var) * real3(-1, 0, 1); // cosTheta1
-    real3 sigmaPointsBelow = sqrt(1.0 - Sq(eta1 / eta2) * (1.0 - Sq(sigmaPoints)));
+    if (use_ukf)
+    {
+        real3 sigmaWeights = real3(0.5, ukf_lambda, 0.5) / (1 + ukf_lambda);
+        real3 sigmaPoints = cosTheta1.xxx + sqrt((1 + ukf_lambda) * cosTheta1Var) * real3(-1, 0, 1); // cosTheta1
+        real3 sigmaPointsBelow = sqrt(1.0 - Sq(eta1 / eta2) * (1.0 - Sq(sigmaPoints)));
 
-    real cosTheta2UKF = dot(sigmaWeights, sigmaPointsBelow);
-    real cosTheta2VarUKF = dot(sigmaWeights, Sq(sigmaPointsBelow - cosTheta2UKF));
-
-    cosTheta2 = lerp(cosTheta2, cosTheta2UKF, use_ukf);
-    cosTheta2Var = lerp(cosTheta2Var, cosTheta2VarUKF, use_ukf);
+        cosTheta2 = dot(sigmaWeights, sigmaPointsBelow);
+        cosTheta2Var = dot(sigmaWeights, Sq(sigmaPointsBelow - cosTheta2));
+    }
 
     // First interface
     real3 R12p, R12s;
@@ -755,10 +757,11 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
 
     real phi21p = PI;
     real phi21s = PI;
-#ifdef IRIDESCENCE_USE_PHASE_SHIFT
-    phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
-    phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
-#endif // IRIDESCENCE_USE_PHASE_SHIFT
+    if (use_phase_shift)
+    {
+        phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
+        phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
+    }
 
 
     // Second interface
@@ -767,9 +770,10 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
 
     real3 phi23p = float3(0,0,0);
     real3 phi23s = float3(0,0,0);
-#ifdef IRIDESCENCE_USE_PHASE_SHIFT
-    FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
-#endif // IRIDESCENCE_USE_PHASE_SHIFT
+    if (use_phase_shift)
+    {
+        FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
+    }
 
 
     // Phase shift

@@ -45,37 +45,43 @@ float _ReferenceUseCorrectCoeffs;
 float _ReferenceUseMeanVdotH;
 float _ReferenceUseVarVdotH;
 float _ReferenceUseVdotHWeightWithLight;
-float _ReferenceUseVdotL;
+
 
 #ifdef IRIDESCENCE_USE_PREINTEGRATED_IBLR
-    #define _IBLUsePreIntegratedIblR 1
+    #define _IBLUsePreIntegratedIblR true
 #else
-    #define _IBLUsePreIntegratedIblR 0
+    #define _IBLUsePreIntegratedIblR false
 #endif // IRIDESCENCE_USE_PREINTEGRATED_IBLR
 
 #ifdef IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS
-    #define _IBLUsePreIntegratedIblRoughness 1
+    #define _IBLUsePreIntegratedIblRoughness true
 #else
-    #define _IBLUsePreIntegratedIblRoughness 0
+    #define _IBLUsePreIntegratedIblRoughness false
 #endif // IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS
 
 #ifdef IRIDESCENCE_USE_VDOTH_MEAN
-    #define _IBLUseMeanVdotH 1
+    #define _IridescenceUseMeanVdotH true
 #else
-    #define _IBLUseMeanVdotH 0
+    #define _IridescenceUseMeanVdotH false
 #endif // IRIDESCENCE_USE_VDOTH_MEAN
 
 #ifdef IRIDESCENCE_USE_VDOTH_VAR
-    #define _IBLUseVarVdotH 1
+    #define _IridescenceUseVarVdotH true
 #else
-    #define _IBLUseVarVdotH 0
+    #define _IridescenceUseVarVdotH false
 #endif // IRIDESCENCE_USE_VDOTH_VAR
 
-#ifdef IRIDESCENCE_USE_UKF
-    #define _IridescenceUseUKF 1
+#ifdef IRIDESCENCE_USE_VDOTL
+    #define _IridescenceUseVdotL true
 #else
-    #define _IridescenceUseUKF 0
-#endif // IRIDESCENCE_USE_UKF
+    #define _IridescenceUseVdotL false
+#endif // IRIDESCENCE_USE_VDOTL
+
+#ifdef IRIDESCENCE_USE_PHASE_SHIFT
+    #define _IridescenceUsePhaseShift true
+#else
+    #define _IridescenceUsePhaseShift false
+#endif // IRIDESCENCE_USE_PHASE_SHIFT
 
 #ifndef _IBLUsePreIntegratedIblR
     float _IBLUsePreIntegratedIblR;
@@ -83,16 +89,18 @@ float _ReferenceUseVdotL;
 #ifndef _IBLUsePreIntegratedIblRoughness
     float _IBLUsePreIntegratedIblRoughness;
 #endif
-#ifndef _IBLUseMeanVdotH
-    float _IBLUseMeanVdotH;
+#ifndef _IridescenceUseMeanVdotH
+    float _IridescenceUseMeanVdotH;
 #endif
-#ifndef _IBLUseVarVdotH
-    float _IBLUseVarVdotH;
+#ifndef _IridescenceUseVarVdotH
+    float _IridescenceUseVarVdotH;
 #endif
-#ifndef _IridescenceUseUKF
-    float _IridescenceUseUKF;
+#ifndef _IridescenceUseVdotL
+    float _IridescenceUseVdotL;
 #endif
-float _IridescenceUKFLambda;
+#ifndef _IridescenceUsePhaseShift
+    float _IridescenceUsePhaseShift;
+#endif
 
 float _ReferenceDebugMeanScale;
 float _ReferenceDebugMeanOffset;

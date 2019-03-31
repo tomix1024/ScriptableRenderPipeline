@@ -71,14 +71,21 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
     return SRGBToLinear(float3(VdotH_mean*_ReferenceDebugMeanScale + _ReferenceDebugMeanOffset, sqrt(VdotH_var)*_ReferenceDebugDevScale + _ReferenceDebugDevOffset, 0));
 #endif // IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
 
+    // Lerp between ideal reflection (assume N=H) and real mean/variance
     float preVdotH = lerp(NdotV, VdotH_mean, _ReferenceUseMeanVdotH);
     float preVdotHVar = lerp(0, VdotH_var, _ReferenceUseVarVdotH);
 
-    #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
+    // Lerp between ideal reflection (assume N=H) and real mean/variance
+    float preVdotL = lerp(2*Sq(NdotV)-1, VdotL_mean, _ReferenceUseVarVdotH);
+    float preVdotLVar = lerp(0, VdotL_var, _ReferenceUseVarVdotH);
+
+
+    if (_IridescenceUseVdotL)
+    {
         // Override VdotH mean and variance from VdotL distribution
-        preVdotH = sqrt(0.5 * (1 + VdotL_mean));
-        preVdotHVar = 0.25 / (1.0 + VdotL_mean) * VdotL_var;
-    #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
+        preVdotH = sqrt(0.5 * (1 + preVdotL));
+        preVdotHVar = 0.25 / (1.0 + preVdotL) * preVdotLVar;
+    }
 
 
     // Compute color
@@ -96,30 +103,34 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
 
         if (NdotL > 0.0)
         {
+            float VdotL = dot(V, L);
+
             // Fresnel component is apply here as describe in ImportanceSampleGGX function
-            float viewAngle = VdotH;
             float thickness = bsdfData.iridescenceThickness;
             float eta1 = 1.0; // Default is air
             float eta2 = bsdfData.iridescenceEta2;
             float3 eta3 = bsdfData.iridescenceEta3;
             float3 kappa3 = bsdfData.iridescenceKappa3;
 
-            float viewAngleOPD = lerp(preVdotH, VdotH, _ReferenceUseCorrectOPD);
-            float viewAngleCoeffs = lerp(preVdotH, VdotH, _ReferenceUseCorrectCoeffs);
 
-            float viewAngleOPDVar = lerp(preVdotHVar, 0, _ReferenceUseCorrectOPD);
-            float viewAngleCoeffsVar = lerp(preVdotHVar, 0, _ReferenceUseCorrectCoeffs);
+            float VdotLOPD = lerp(preVdotL, VdotL, _ReferenceUseCorrectOPD);
+            float VdotHOPD = lerp(preVdotH, VdotH, _ReferenceUseCorrectOPD);
+            float VdotHCoeffs = lerp(preVdotH, VdotH, _ReferenceUseCorrectCoeffs);
+
+            float VdotLOPDVar = lerp(preVdotLVar, 0, _ReferenceUseCorrectOPD);
+            float VdotHOPDVar = lerp(preVdotHVar, 0, _ReferenceUseCorrectOPD);
+            float VdotHCoeffsVar = lerp(preVdotHVar, 0, _ReferenceUseCorrectCoeffs);
+
 
             // float3 F = EvalIridescenceCorrect(eta1, viewAngle, eta2, thickness, eta3, kappa3);
             float OPD, OPDSigma;
 
-        #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
-            EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma);
-        #else
-            EvalOpticalPathDifference(eta1, viewAngleOPD, viewAngleOPDVar, eta2, thickness, OPD, OPDSigma);
-        #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
+            if (_IridescenceUseVdotL)
+                EvalOpticalPathDifferenceVdotL(eta1, VdotLOPD, VdotLOPDVar, eta2, thickness, OPD, OPDSigma);
+            else
+                EvalOpticalPathDifference(eta1, VdotHOPD, VdotHOPDVar, eta2, thickness, OPD, OPDSigma);
 
-            float3 F = EvalIridescenceCorrectOPD(eta1, viewAngleCoeffs, viewAngleCoeffsVar, eta2, eta3, kappa3, OPD, OPDSigma);
+            float3 F = EvalIridescenceCorrectOPD(eta1, VdotHCoeffs, VdotHCoeffsVar, eta2, eta3, kappa3, OPD, OPDSigma, _IridescenceUsePhaseShift);
 
             float3 FweightOverPdf = F * weightOverPdf;
 

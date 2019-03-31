@@ -184,7 +184,7 @@ Shader "HDRenderPipeline/Iridescence2DRect"
 
                         float OPD, OPDSigma;
                         EvalOpticalPathDifference(eta1, VdotH, 0, eta2, thickness, OPD, OPDSigma);
-                        float3 F = EvalIridescenceCorrectOPD(eta1, VdotH, 0, eta2, eta3, kappa3, OPD, OPDSigma);
+                        float3 F = EvalIridescenceCorrectOPD(eta1, VdotH, 0, eta2, eta3, kappa3, OPD, OPDSigma, _IridescenceUsePhaseShift);
 
                         float3 FweightOverPdf = F * weightOverPdf;
 
@@ -257,7 +257,7 @@ Shader "HDRenderPipeline/Iridescence2DRect"
                 EvalOpticalPathDifference(eta1, VdotH_mean, VdotH_var, eta2, thickness, OPD, OPDSigma);
             #endif // IRIDESCENCE_USE_PREFILTERED_VDOTL
 
-                float3 iridescenceF = EvalIridescenceCorrectOPD(eta1, VdotH_mean, VdotH_var, eta2, eta3, kappa3, OPD, OPDSigma);
+                float3 iridescenceF = EvalIridescenceCorrectOPD(eta1, VdotH_mean, VdotH_var, eta2, eta3, kappa3, OPD, OPDSigma, _IridescenceUsePhaseShift);
 
 
 
