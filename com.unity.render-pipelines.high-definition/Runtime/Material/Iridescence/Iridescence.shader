@@ -10,36 +10,6 @@ Shader "HDRenderPipeline/Iridescence"
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 1.0
         _Fresnel0("Fresnel0 for IBL", Color) = (1,1,1,1)
 
-
-        [Toggle(IRIDESCENCE_USE_PREINTEGRATED_IBLR)]_IBLUsePreIntegratedIblR("IBL Preintegrated R", Float) = 0.0
-        [Toggle(IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS)]_IBLUsePreIntegratedIblRoughness("IBL Preintegrated Roughness", Float) = 0.0
-
-        [Toggle(IRIDESCENCE_USE_VDOTH_MEAN)]_IBLUseMeanVdotH("IBL Mean VdotH", Float) = 0.0
-        [Toggle(IRIDESCENCE_USE_VDOTH_VAR)]_IBLUseVarVdotH("IBL Var VdotH", Float) = 0.0
-
-        [Toggle(IRIDESCENCE_USE_UKF)]_IridescenceUseUKF("Use UKF", Float) = 0.0
-        _IridescenceUKFLambda("UKF Lambda", Range(0.0, 2.0)) = 1.0
-
-        [Toggle(IRIDESCENCE_USE_PHASE_SHIFT)]_IridescenceUsePhaseShift("Use Phase Shifts", Float) = 0.0
-
-        [Toggle(IRIDESCENCE_ENABLE_TRANSMISSION)]_IridescenceEnableTransmission("Enable Transmission", Float) = 0.0
-
-        _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
-        _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0
-        _ReferenceUseMeanVdotH("Ref Mean VdotH", Range(0.0, 1.0)) = 0.0
-        _ReferenceUseVarVdotH("Ref Var VdotH", Range(0.0, 1.0)) = 0.0
-        _ReferenceUseVdotHWeightWithLight("Ref Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
-        [Toggle(IRIDESCENCE_REFERENCE_USE_VDOTL)]_ReferenceUseVdotL("Ref Use VdotL", Float) = 0.0
-
-        _ReferenceDebugMeanScale("Ref Debug Mean Scale", Float) = 1.0
-        _ReferenceDebugMeanOffset("Ref Debug Mean Offset", Float) = 0.0
-        _ReferenceDebugDevScale("Ref Debug Dev Scale", Float) = 1.0
-        _ReferenceDebugDevOffset("Ref Debug Dev Offset", Float) = 0.0
-
-        [Toggle(IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR)]_IridescenceReferenceVdotHMeanVar("Show VdotH Mean/Var", Float) = 0
-
-        [Toggle(LIT_USE_GGX_ENERGY_COMPENSATION)]_UseGGXEnergyCompensation("Use GGX Energy Compensation", Float) = 1
-
         // _NormalMap("NormalMap", 2D) = "bump" {}     // Tangent space normal map
         // _NormalScale("_NormalScale", Range(0.0, 8.0)) = 1
 
@@ -51,10 +21,37 @@ Shader "HDRenderPipeline/Iridescence"
         _IridescenceEta3("Iridescence Eta 3", Range(1.0, 5.0)) = 2.0
         _IridescenceKappa3("Iridescence Kappa 3", Range(0.0, 5.0)) = 0.0
 
+
+        [Toggle(IRIDESCENCE_USE_PREINTEGRATED_IBLR)]_IBLUsePreIntegratedIblR("IBL Preintegrated R", Float) = 0.0
+        [Toggle(IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS)]_IBLUsePreIntegratedIblRoughness("IBL Preintegrated Roughness", Float) = 0.0
+
+        [Toggle(IRIDESCENCE_USE_VDOTH_MEAN)]_IBLUseMeanVdotH("IBL Mean VdotH", Float) = 0.0
+        [Toggle(IRIDESCENCE_USE_VDOTH_VAR)]_IBLUseVarVdotH("IBL Var VdotH", Float) = 0.0
+        [Toggle(IRIDESCENCE_USE_VDOTL)]_IBLUseVdotL("IBL VdotL", Float) = 0.0
+
+        [Toggle(IRIDESCENCE_USE_PHASE_SHIFT)]_IridescenceUsePhaseShift("Use Phase Shifts", Float) = 1.0
+
+        [Toggle(IRIDESCENCE_ENABLE_TRANSMISSION)]_IridescenceEnableTransmission("Enable Transmission", Float) = 0.0
+
+        _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
+        _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0
+        _ReferenceUseMeanVdotH("Ref Mean VdotH", Range(0.0, 1.0)) = 0.0
+        _ReferenceUseVarVdotH("Ref Var VdotH", Range(0.0, 1.0)) = 0.0
+        _ReferenceUseVdotHWeightWithLight("Ref Weight VdotH with Light", Range(0.0, 1.0)) = 0.0
+
+        _ReferenceDebugMeanScale("Ref Debug Mean Scale", Float) = 1.0
+        _ReferenceDebugMeanOffset("Ref Debug Mean Offset", Float) = 0.0
+        _ReferenceDebugDevScale("Ref Debug Dev Scale", Float) = 1.0
+        _ReferenceDebugDevOffset("Ref Debug Dev Offset", Float) = 0.0
+
+        [Toggle(IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR)]_IridescenceReferenceVdotHMeanVar("Show VdotH Mean/Var", Float) = 0
+
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_16)]_IridescenceDisplayReferenceIBL16("16 Sample Ref. IBL", Float) = 0
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_256)]_IridescenceDisplayReferenceIBL256("256 Sample Ref. IBL", Float) = 0
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048)]_IridescenceDisplayReferenceIBL2048("2048 Sample Ref. IBL", Float) = 0
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K)]_IridescenceDisplayReferenceIBL16k("16k Sample Ref. IBL", Float) = 0
+
+        [Toggle(LIT_USE_GGX_ENERGY_COMPENSATION)]_UseGGXEnergyCompensation("Use GGX Energy Compensation", Float) = 1
 
         // Stencil state
         [HideInInspector] _StencilRef("_StencilRef", Int) = 2 // StencilLightingUsage.RegularLighting  (fixed at compile time)
@@ -111,7 +108,6 @@ Shader "HDRenderPipeline/Iridescence"
 
     #pragma shader_feature _ IRIDESCENCE_DISPLAY_REFERENCE_IBL_16 IRIDESCENCE_DISPLAY_REFERENCE_IBL_256 IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048 IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K
     #pragma shader_feature _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
-    #pragma multi_compile _ IRIDESCENCE_REFERENCE_USE_VDOTL
 
     #pragma shader_feature _ IRIDESCENCE_ENABLE_TRANSMISSION
 
@@ -122,6 +118,7 @@ Shader "HDRenderPipeline/Iridescence"
 
     #pragma shader_feature _ IRIDESCENCE_USE_VDOTH_MEAN
     #pragma shader_feature _ IRIDESCENCE_USE_VDOTH_VAR
+    #pragma shader_feature _ IRIDESCENCE_USE_VDOTL
 
     #pragma shader_feature _ IRIDESCENCE_USE_UKF
     #pragma shader_feature _ IRIDESCENCE_USE_PHASE_SHIFT

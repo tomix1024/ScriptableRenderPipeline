@@ -271,34 +271,34 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float VdotL_mean;
         float VdotL_var;
         GetPreIntegratedVdotLGGX(V, preLightData.iblR, preLightData.iblPerceptualRoughness, VdotL_mean, VdotL_var);
-        VdotL_var = lerp(0, VdotL_var, _IBLUseVarVdotH);
+        VdotL_var = _IridescenceUseVarVdotH ? VdotL_var : 0;
 
-    #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
-        // Override VdotH mean and variance from VdotL distribution
-        VdotH_mean = sqrt(0.5 * (1 + VdotL_mean));
-        VdotH_var = 0.25 / (1.0 + VdotL_mean) * VdotL_var;
-    #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
+        if (_IridescenceUseVdotL)
+        {
+            // Override VdotH mean and variance from VdotL distribution
+            VdotH_mean = sqrt(0.5 * (1 + VdotL_mean));
+            VdotH_var = 0.25 / (1.0 + VdotL_mean) * VdotL_var;
+        }
 
 
-        float viewAngle = lerp(NdotV, VdotH_mean, _IBLUseMeanVdotH); // NOTE: THIS IS NOT GENERALLY THE CASE!
-        float viewAngleVar = lerp(0, VdotH_var, _IBLUseVarVdotH);
+        float viewAngle = _IridescenceUseMeanVdotH ? VdotH_mean : NdotV; // NOTE: THIS IS NOT GENERALLY THE CASE!
+        float viewAngleVar = _IridescenceUseVarVdotH ? VdotH_var : 0;
         float thickness = bsdfData.iridescenceThickness;
         float eta1 = 1.0; // Default is air
         float eta2 = bsdfData.iridescenceEta2;
         float3 eta3 = bsdfData.iridescenceEta3;
         float3 kappa3 = bsdfData.iridescenceKappa3;
 
-        // iridescenceFGD = EvalIridescenceCorrect(eta1, viewAngle, viewAngleVar, eta2, thickness, eta3, kappa3, _IridescenceUseUKF, _IridescenceUKFLambda);
+        // iridescenceFGD = EvalIridescenceCorrect(eta1, viewAngle, viewAngleVar, eta2, thickness, eta3, kappa3);
         float OPD, OPDSigma;
 
-    #ifdef IRIDESCENCE_REFERENCE_USE_VDOTL
-        EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma);
-    #else
-        EvalOpticalPathDifference(eta1, viewAngle, viewAngleVar, eta2, thickness, OPD, OPDSigma);
-    #endif // IRIDESCENCE_REFERENCE_USE_VDOTL
+        if (_IridescenceUseVdotL)
+            EvalOpticalPathDifferenceVdotL(eta1, VdotL_mean, VdotL_var, eta2, thickness, OPD, OPDSigma);
+        else
+            EvalOpticalPathDifference(eta1, viewAngle, viewAngleVar, eta2, thickness, OPD, OPDSigma);
 
-        iridescenceFGD = EvalIridescenceCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma);
-        iridescenceTransmissiveFGD = EvalIridescenceTransmissionCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma);
+        iridescenceFGD = EvalIridescenceCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma, _IridescenceUsePhaseShift);
+        iridescenceTransmissiveFGD = EvalIridescenceTransmissionCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma, _IridescenceUsePhaseShift);
     }
 
     float specularReflectivity;
