@@ -98,6 +98,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public void RenderInit(CommandBuffer cmd)
         {
             // Data is already loaded!
+            // But sometimes it disappears...
+            if (m_SpectralSensitivity == null)
+            {
+                float muOffset, muScale;
+                float sigmaOffset, sigmaScale;
+                LoadData(out m_SpectralSensitivity, out muOffset, out muScale, out sigmaOffset, out sigmaScale);
+                m_SpectralSensitivity_ST = new Vector4(muScale, sigmaScale, muOffset, sigmaOffset);
+            }
         }
 
         public void Cleanup()
