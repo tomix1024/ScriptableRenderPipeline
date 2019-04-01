@@ -717,7 +717,7 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     return 0.5 * I;
 }
 
-real3 EvalIridescenceTransmissionCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, real OPD, real OPDSigma)
+real3 EvalIridescenceTransmissionCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, real OPD, real OPDSigma, bool use_phase_shift = true)
 {
     // Evaluate the cosTheta on the base layer (Snell law)
     real sinTheta2 = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
@@ -736,10 +736,11 @@ real3 EvalIridescenceTransmissionCorrectOPD(real eta1, real cosTheta1, real cosT
 
     real phi21p = PI;
     real phi21s = PI;
-#ifdef IRIDESCENCE_USE_PHASE_SHIFT
-    phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
-    phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
-#endif // IRIDESCENCE_USE_PHASE_SHIFT
+    if (use_phase_shift)
+    {
+        phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
+        phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
+    }
 
 
     // Second interface
@@ -750,9 +751,10 @@ real3 EvalIridescenceTransmissionCorrectOPD(real eta1, real cosTheta1, real cosT
 
     real3 phi23p = float3(0,0,0);
     real3 phi23s = float3(0,0,0);
-#ifdef IRIDESCENCE_USE_PHASE_SHIFT
-    FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
-#endif // IRIDESCENCE_USE_PHASE_SHIFT
+    if (use_phase_shift)
+    {
+        FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
+    }
 
 
     // Phase
