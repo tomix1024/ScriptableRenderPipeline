@@ -27,6 +27,7 @@ float _NormalScale;
 float4 _NormalMap_ST;
 
 float4 _IridescenceThicknessMap_ST;
+float _IridescenceThicknessMapScale;
 
 float _IridescenceThickness;
 float _IridescenceEta2;

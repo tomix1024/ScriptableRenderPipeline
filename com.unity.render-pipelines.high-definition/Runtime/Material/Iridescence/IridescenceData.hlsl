@@ -33,7 +33,7 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     float2 uvThickness = input.texCoord0.xy * _IridescenceThicknessMap_ST.xy + _IridescenceThicknessMap_ST.zw;
 
 #ifdef IRIDESCENCE_USE_THICKNESS_MAP
-    surfaceData.iridescenceThickness *= SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvThickness).x;
+    surfaceData.iridescenceThickness += _IridescenceThicknessMapScale * SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvThickness).x;
 #endif // IRIDESCENCE_USE_THICKNESS_MAP
 
 #if defined(DEBUG_DISPLAY)

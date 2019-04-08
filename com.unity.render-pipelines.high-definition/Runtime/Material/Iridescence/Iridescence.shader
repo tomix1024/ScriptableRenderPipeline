@@ -16,6 +16,7 @@ Shader "HDRenderPipeline/Iridescence"
 
         [Toggle(IRIDESCENCE_USE_THICKNESS_MAP)]_IridescenceUseThicknessMap("Use Thickness Map", Float) = 0
         _IridescenceThicknessMap("Iridescence Thickness Map", 2D) = "white" {}
+        _IridescenceThicknessMapScale("Iridescence Thickness Map Scale (µm)", Range(0.0, 3.0)) = 1.0
 
         _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 3.0)) = 1.0
         _IridescenceEta2("Iridescence Eta 2", Range(1.0, 5.0)) = 1.21
