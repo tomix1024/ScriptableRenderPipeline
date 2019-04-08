@@ -8,7 +8,14 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
 {
     ApplyDoubleSidedFlipOrMirror(input); // Apply double sided flip on the vertex normal
 
+    // Apply offset and tiling
+    float2 uvNormal = input.texCoord0.xy * _NormalMap_ST.xy + _NormalMap_ST.zw;
+
     surfaceData.normalWS = input.worldToTangent[2].xyz;
+#ifdef _NORMALMAP
+    float3 normalTS = UnpackNormalmapRGorAG(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uvNormal), _NormalScale);
+    GetNormalWS(input, normalTS, surfaceData.normalWS);
+#endif
 
     // No occlusion...
     surfaceData.ambientOcclusion = 1;

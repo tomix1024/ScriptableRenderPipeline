@@ -10,8 +10,9 @@ Shader "HDRenderPipeline/Iridescence"
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 1.0
         _Fresnel0("Fresnel0 for IBL", Color) = (1,1,1,1)
 
-        // _NormalMap("NormalMap", 2D) = "bump" {}     // Tangent space normal map
-        // _NormalScale("_NormalScale", Range(0.0, 8.0)) = 1
+        [Toggle(_NORMALMAP)]_UseNormalMap("Use NormalMap", Float) = 0.0
+        _NormalMap("NormalMap", 2D) = "bump" {}     // Tangent space normal map
+        _NormalScale("_NormalScale", Range(0.0, 8.0)) = 1
 
         [Toggle(IRIDESCENCE_USE_THICKNESS_MAP)]_IridescenceUseThicknessMap("Use Thickness Map", Float) = 0
         _IridescenceThicknessMap("Iridescence Thickness Map", 2D) = "white" {}
@@ -103,6 +104,8 @@ Shader "HDRenderPipeline/Iridescence"
 
     //enable GPU instancing support
     #pragma multi_compile_instancing
+
+    #pragma shader_feature _NORMALMAP
 
     #pragma shader_feature _ IRIDESCENCE_DISPLAY_REFERENCE_IBL_16 IRIDESCENCE_DISPLAY_REFERENCE_IBL_256 IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048 IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K
     #pragma shader_feature _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
