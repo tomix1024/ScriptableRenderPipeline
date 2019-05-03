@@ -61,20 +61,16 @@ Shader "HDRenderPipeline/Iridescence"
 
         // Blending state
         [HideInInspector] _SurfaceType("__surfacetype", Float) = 0.0
-        // [HideInInspector] _BlendMode("__blendmode", Float) = 0.0
-        [Toggle(_SURFACE_TYPE_TRANSPARENT)]_SurfaceTypeTransparent("SurfaceTypeTransparent", Float) = 0
-        [Toggle(_BLENDMODE_ALPHA)]_BlendModeAlpha("BlendModeAlpha", Float) = 0
-        [Toggle(_BLENDMODE_ADD)]_BlendModeAdd("BlendModeAdd", Float) = 0
-        [Enum(Zero,0, One,1, DstColor,2, SrcColor,3, OneMinusDstColor,4, OneMinusSrcColor,6, DstAlpha,7, SrcAlpha,5, OneMinusDstAlpha,8, OneMinusSrcAlpha,10, SrcAlphaSaturate,9)] _SrcBlend("__src", Float) = 1.0
-        [Enum(Zero,0, One,1, DstColor,2, SrcColor,3, OneMinusDstColor,4, OneMinusSrcColor,6, DstAlpha,7, SrcAlpha,5, OneMinusDstAlpha,8, OneMinusSrcAlpha,10, SrcAlphaSaturate,9)] _DstBlend("__dst", Float) = 0.0
+        [HideInInspector] _SrcBlend("__src", Float) = 1.0
+        [HideInInspector] _DstBlend("__dst", Float) = 0.0
         [HideInInspector] _ZWrite("__zw", Float) = 1.0
-        [Enum(Both, 0, Back, 1, Front, 2)]_CullMode("Cull Mode", Float) = 2
+        [HideInInspector] _CullMode("Cull Mode", Float) = 2
         [HideInInspector] _ZTestDepthEqualForOpaque("_ZTestDepthEqualForOpaque", Int) = 4 // Less equal
         [HideInInspector] _ZTestModeDistortion("_ZTestModeDistortion", Int) = 8
         [HideInInspector] _ZTestGBuffer("_ZTestGBuffer", Int) = 4
 
-        [Toggle(_DOUBLESIDED_ON)] _DoubleSidedEnable("Double sided enable", Float) = 0.0
-        [Enum(Flip, 0, Mirror, 1, None, 2)] _DoubleSidedNormalMode("Double sided normal mode", Float) = 1
+        [HideInInspector][ToggleUI] _DoubleSidedEnable("Double sided enable", Float) = 0.0
+        [HideInInspector] _DoubleSidedNormalMode("Double sided normal mode", Float) = 1
         [HideInInspector] _DoubleSidedConstants("_DoubleSidedConstants", Vector) = (1, 1, -1, 0)
 
         // HACK: GI Baking system relies on some properties existing in the shader ("_MainTex", "_Cutoff" and "_Color") for opacity handling, so we need to store our version of those parameters in the hard-coded name the GI baking system recognizes.
@@ -102,8 +98,9 @@ Shader "HDRenderPipeline/Iridescence"
 
     // Keyword for transparent
     #pragma shader_feature _SURFACE_TYPE_TRANSPARENT
-    #pragma shader_feature _ _BLENDMODE_ALPHA _BLENDMODE_ADD _BLENDMODE_PRE_MULTIPLY
-    #pragma shader_feature _BLENDMODE_PRESERVE_SPECULAR_LIGHTING // easily handled in material.hlsl, so adding this already.
+    // We do not rely on any special treatment for blending...
+    // #pragma shader_feature _ _BLENDMODE_ALPHA _BLENDMODE_ADD _BLENDMODE_PRE_MULTIPLY
+    // #pragma shader_feature _BLENDMODE_PRESERVE_SPECULAR_LIGHTING // easily handled in material.hlsl, so adding this already.
     #pragma shader_feature _ENABLE_FOG_ON_TRANSPARENT
 
     //enable GPU instancing support
@@ -390,5 +387,5 @@ Shader "HDRenderPipeline/Iridescence"
 
     }
 
-    // CustomEditor "Experimental.Rendering.HDPipeline.IridescenceGUI"
+    CustomEditor "Experimental.Rendering.HDPipeline.IridescenceGUI"
 }
