@@ -897,6 +897,208 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     return 0.5 * I;
 }
 
+
+struct IridescenceData
+{
+    // NOTE: real C0 = 1 + C0 for reflection!
+    // M=3
+    float3 reflectionC0p;
+    float3 reflectionC0s;
+
+    float3 transmissionC0p;
+    float3 transmissionC0s;
+
+    float3 nextCmFactors;
+    float3 nextCmFactorp;
+
+    float3 phi2p;
+    float3 phi2s;
+};
+
+IridescenceData EvalIridescenceCoefficientsOnly(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, bool use_phase_shift = true, bool use_ukf = false, real ukf_lambda = 1.0)
+{
+    IridescenceData result;
+
+    // Following line from original code is not needed for us, it create a discontinuity
+    // Force eta_2 -> eta_1 when Dinc -> 0.0
+    // real eta_2 = lerp(eta_1, eta_2, smoothstep(0.0, 0.03, Dinc));
+    // Evaluate the cosTheta on the base layer (Snell law)
+    real sinTheta2sq = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
+
+    // Handle TIR
+    // if (sinTheta2sq > 1.0)
+    // {
+    //     // TODO everything is reflected!
+    //     return result;
+    // }
+
+    real cosTheta2 = sqrt(1.0 - sinTheta2sq);
+    real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1))); // cf. EKF
+
+    if (use_ukf)
+    {
+        real3 sigmaWeights = real3(0.5, ukf_lambda, 0.5) / (1 + ukf_lambda);
+        real3 sigmaPoints = cosTheta1.xxx + sqrt((1 + ukf_lambda) * cosTheta1Var) * real3(-1, 0, 1); // cosTheta1
+        real3 sigmaPointsBelow = sqrt(1.0 - Sq(eta1 / eta2) * (1.0 - Sq(sigmaPoints)));
+
+        cosTheta2 = dot(sigmaWeights, sigmaPointsBelow);
+        cosTheta2Var = dot(sigmaWeights, Sq(sigmaPointsBelow - cosTheta2));
+    }
+
+    // First interface
+    real3 R12p, R12s;
+    F_FresnelConductor(eta2/eta1, 0, cosTheta1, R12p, R12s);
+    real3 T12p = 1.0 - R12p;
+    real3 T12s = 1.0 - R12s;
+
+    real phi21p = PI;
+    real phi21s = PI;
+    if (use_phase_shift)
+    {
+        phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
+        phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
+    }
+
+
+    // Second interface
+    real3 R23p, R23s;
+    F_FresnelConductor(eta3/eta2, kappa3/eta2, cosTheta2, R23p, R23s);
+    real3 T23p = 1.0 - R23p;
+    real3 T23s = 1.0 - R23s;
+
+    real3 phi23p = float3(0,0,0);
+    real3 phi23s = float3(0,0,0);
+    if (use_phase_shift)
+    {
+        FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
+    }
+
+
+    // Compound terms
+    real3 R123p = R12p * R23p;
+    real3 r123p = sqrt(R123p);
+    real3 Rstarp = Sq(T12p) * R23p / (real3(1.0, 1.0, 1.0) - R123p);
+    real3 Tstarp = T12p * T23p / (real3(1.0, 1.0, 1.0) - R123p);
+    real3 R123s = R12s * R23s;
+    real3 r123s = sqrt(R123s);
+    real3 Rstars = Sq(T12s) * R23s / (real3(1.0, 1.0, 1.0) - R123s);
+    real3 Tstars = T12s * T23s / (real3(1.0, 1.0, 1.0) - R123s);
+
+
+    // Coefficients
+    result.reflectionC0p = Rstarp - T12p;
+    result.reflectionC0s = Rstars - T12s;
+
+    result.transmissionC0p = Tstarp;
+    result.transmissionC0s = Tstars;
+
+    result.nextCmFactorp = r123p;
+    result.nextCmFactors = r123s;
+
+    // Phase shift
+    result.phi2p = phi21p + phi23p;
+    result.phi2s = phi21s + phi23s;
+
+    return result;
+}
+
+
+void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3, real3 kappa3, real OPD, out real3 result[4], bool use_phase_shift = true, bool use_ukf = false, real ukf_lambda = 1.0)
+{
+    IridescenceData iridescenceData = EvalIridescenceCoefficientsOnly(eta1, cosTheta1, 0, eta2, eta3, kappa3, use_phase_shift, use_ukf, ukf_lambda);
+    // Assume constant optical path difference for now!
+
+    const int M = 2;
+
+    // Prepare single bounce data
+    float3 reflectionCmSmp;
+    float3 reflectionCmSms;
+    float3 transmissionCmSmp;
+    float3 transmissionCmSms;
+
+    reflectionCmSmp = iridescenceData.reflectionC0p + 1; // NOTE that we have to add 1 here
+    reflectionCmSms = iridescenceData.reflectionC0s + 1; // NOTE that we have to add 1 here
+    transmissionCmSmp = iridescenceData.transmissionC0p;
+    transmissionCmSms = iridescenceData.transmissionC0s;
+
+    float3 reflectionCmp = iridescenceData.reflectionC0p;
+    float3 reflectionCms = iridescenceData.reflectionC0s;
+    float3 transmissionCmp = iridescenceData.transmissionC0p;
+    float3 transmissionCms = iridescenceData.transmissionC0s;
+    for (int m = 1; m <= M; ++m)
+    {
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * iridescenceData.phi2p, 0);
+        reflectionCmp *= iridescenceData.nextCmFactorp;
+        reflectionCmSmp += reflectionCmp * Smp;
+        transmissionCmp *= iridescenceData.nextCmFactorp;
+        transmissionCmSmp += transmissionCmp * Smp;
+
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * iridescenceData.phi2s, 0);
+        reflectionCms *= iridescenceData.nextCmFactors;
+        reflectionCmSms += reflectionCms * Sms;
+        transmissionCms *= iridescenceData.nextCmFactors;
+        transmissionCmSms += transmissionCms * Sms;
+    }
+
+    const int N = 2;
+
+    real3 Ip[2+N];
+    real3 C0p[2+N];
+    real3 Is[2+N];
+    real3 C0s[2+N];
+    // real3 I[2+N]; // result
+
+
+    // 0'th reflection
+    Ip[0] = reflectionCmSmp;
+    Is[0] = reflectionCmSms;
+
+    // (Cache) 0'th transmission
+    for (int i = 1; i < N+2; ++i)
+    {
+        Ip[i] = transmissionCmSmp;
+        Is[i] = transmissionCmSms;
+        C0p[i] = iridescenceData.transmissionC0p;
+        C0s[i] = iridescenceData.transmissionC0s;
+    }
+
+
+    for (int j = 1; j < N+2; ++j)
+    {
+        // (j'st) reflection (and transmission)
+
+        // Finalize path with last transmission
+        Ip[j] *= iridescenceData.transmissionC0p;
+        Is[j] *= iridescenceData.transmissionC0s;
+        // TODO fix this: C0 * C0 is counted twice this way!
+        Ip[j] += C0p[j] * (transmissionCmSmp - iridescenceData.transmissionC0p);
+        Is[j] += C0s[j] * (transmissionCmSms - iridescenceData.transmissionC0s);
+
+        // Add reflection to higher order path
+        // TODO only update next path here, and reuse it for next `j`!
+        for (int i = j+1; i < N+2; ++i)
+        {
+            // Add attenuated version of "current" bounce
+            Ip[i] *= iridescenceData.reflectionC0p + 1;
+            Is[i] *= iridescenceData.reflectionC0s + 1;
+
+            // TODO fix this: C0 * C0 is counted twice this way!
+            Ip[i] += C0p[i] * (reflectionCmSmp - (iridescenceData.reflectionC0p + 1));
+            Is[i] += C0s[i] * (reflectionCmSms - (iridescenceData.reflectionC0s + 1));
+
+            C0p[j] *= iridescenceData.reflectionC0p + 1;
+            C0s[j] *= iridescenceData.reflectionC0s + 1;
+        }
+    }
+
+    for (int j = 0; j < N+2; ++j)
+    {
+        // This helps with black pixels:
+        result[j] = 0.5 * max(Is[j].rgb, float3(0,0,0)) + max(Ip[j].rgb, float3(0,0,0));
+    }
+}
+
+
 //-----------------------------------------------------------------------------
 // Fabric
 //-----------------------------------------------------------------------------

@@ -697,6 +697,44 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
 //    envLighting += IntegrateDisneyDiffuseIBLRef(lightLoopContext, V, preLightData, lightData, bsdfData);
 //    #endif
 
+#elif defined(IRIDESCENCE_TRANSPARENT_SPHERE)
+
+    // Assume we have eta1=eta3 = 1
+    // Assume geometry is a perfect sphere
+    // Assume surface is smooth!
+
+    float iblMipLevel = 0;
+
+
+    float viewAngle = preLightData.NdotV;
+    float thickness = bsdfData.iridescenceThickness;
+    float eta1 = 1.0; // Default is air
+    float eta2 = bsdfData.iridescenceEta2;
+    float3 eta3 = 1.0;
+    float3 kappa3 = 0.0;
+
+    float OPD, OPDSigma;
+    EvalOpticalPathDifference(eta1, viewAngle, 0, eta2, thickness, OPD, OPDSigma);
+
+    real3 FGDi[4];
+    EvalIridescenceSphereModel(eta1, viewAngle, eta2, eta3, kappa3, OPD, FGDi);
+
+    envLighting = float3(0,0,0);
+
+    float3 Vi = V;
+    float3 Li = reflect(-V, bsdfData.normalWS);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        float4 preLD = SampleEnv(lightLoopContext, lightData.envIndex, Li, iblMipLevel);
+        envLighting += FGDi[i] * preLD.rgb;
+
+        float3 Vinext = -reflect(-Li, Vi);
+        float3 Linext = -Vi;
+        Vi = Vinext;
+        Li = Linext;
+    }
+
 #else
 
     float3 R = preLightData.iblR;
