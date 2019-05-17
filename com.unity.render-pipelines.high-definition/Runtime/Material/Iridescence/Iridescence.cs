@@ -28,6 +28,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Iridescence
             [SurfaceDataAttributes("Iridescence Layer Thickness")]
             public float iridescenceThickness;
+            public Vector4 iridescenceThicknessSphereModel;
 
             [SurfaceDataAttributes("Iridescence Layer Eta")]
             public float iridescenceEta2;
@@ -61,6 +62,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // Iridescence
             public float iridescenceThickness;
+            public Vector4 iridescenceThicknessSphereModel;
             public float iridescenceEta2;
             public float iridescenceEta3;
             public float iridescenceKappa3;

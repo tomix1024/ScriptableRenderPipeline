@@ -16,7 +16,7 @@ Shader "HDRenderPipeline/Iridescence"
         [Toggle(IRIDESCENCE_USE_THICKNESS_MAP)]_IridescenceUseThicknessMap("Use Thickness Map", Float) = 0
         _IridescenceThicknessMap("Iridescence Thickness Map", 2D) = "white" {}
 
-        _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 3.0)) = 1.0
+        _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 10.0)) = 1.0
         _IridescenceEta2("Iridescence Eta 2", Range(1.0, 5.0)) = 1.21
         _IridescenceEta3("Iridescence Eta 3", Range(1.0, 5.0)) = 2.0
         _IridescenceKappa3("Iridescence Kappa 3", Range(0.0, 5.0)) = 0.0
@@ -33,6 +33,7 @@ Shader "HDRenderPipeline/Iridescence"
 
         [Toggle(IRIDESCENCE_ENABLE_TRANSMISSION)]_IridescenceEnableTransmission("Enable Transmission", Float) = 0.0
         [Toggle(IRIDESCENCE_TRANSPARENT_SPHERE)]_IridescenceTransparentSphere("Enable Transparent Sphere Model", Float) = 0.0
+        _RayMask("Ray Mask", Vector) = (1,1,1,1)
 
         _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0

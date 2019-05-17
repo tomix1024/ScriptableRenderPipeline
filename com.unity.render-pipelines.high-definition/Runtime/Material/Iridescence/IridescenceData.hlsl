@@ -18,6 +18,7 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     surfaceData.fresnel0 = _Fresnel0.rgb;
     surfaceData.perceptualSmoothness = _Smoothness;
     surfaceData.iridescenceThickness = _IridescenceThickness;
+    surfaceData.iridescenceThicknessSphereModel = _IridescenceThickness.xxxx;
     surfaceData.iridescenceEta2 = _IridescenceEta2;
     surfaceData.iridescenceEta3 = _IridescenceEta3;
     surfaceData.iridescenceKappa3 = _IridescenceKappa3;
@@ -26,7 +27,23 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     float2 uvThickness = input.texCoord0.xy * _IridescenceThicknessMap_ST.xy + _IridescenceThicknessMap_ST.zw;
 
 #ifdef IRIDESCENCE_USE_THICKNESS_MAP
+    float2 uvPolar2 = float2(atan2(surfaceData.normalWS.z, surfaceData.normalWS.x) / TWO_PI, acos(surfaceData.normalWS.y) / PI); // TODO verify axes and orientations
     surfaceData.iridescenceThickness *= SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvThickness).x;
+
+    // For sphere model:
+
+    // TODO get normalOS and viewDirOS from somewhere?!
+    float3 normalOS = surfaceData.normalWS;
+    float3 viewDirOS = V;
+    for (int i = 0; i < 4; ++i)
+    {
+        float2 uvPolar = float2(atan2(normalOS.z, normalOS.x) / TWO_PI, acos(-normalOS.y) / PI); // TODO verify axes and orientations
+        surfaceData.iridescenceThicknessSphereModel[i] *= SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvPolar).x;
+
+        normalOS = -reflect(-normalOS, viewDirOS);
+        viewDirOS = reflect(viewDirOS, normalOS);
+    }
+
 #endif // IRIDESCENCE_USE_THICKNESS_MAP
 
 #if defined(DEBUG_DISPLAY)

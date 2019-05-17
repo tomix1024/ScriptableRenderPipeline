@@ -45,6 +45,7 @@ struct SurfaceData
     float perceptualSmoothness;
     float3 fresnel0;
     float iridescenceThickness;
+    float4 iridescenceThicknessSphereModel;
     float iridescenceEta2;
     float iridescenceEta3;
     float iridescenceKappa3;
@@ -62,6 +63,7 @@ struct BSDFData
     float perceptualRoughness;
     float roughness;
     float iridescenceThickness;
+    float4 iridescenceThicknessSphereModel;
     float iridescenceEta2;
     float iridescenceEta3;
     float iridescenceKappa3;

@@ -154,6 +154,7 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
 
     // Iridescence
     bsdfData.iridescenceThickness = surfaceData.iridescenceThickness;
+    bsdfData.iridescenceThicknessSphereModel = surfaceData.iridescenceThicknessSphereModel;
     bsdfData.iridescenceEta2      = surfaceData.iridescenceEta2;
     bsdfData.iridescenceEta3      = surfaceData.iridescenceEta3;
     bsdfData.iridescenceKappa3    = surfaceData.iridescenceKappa3;
@@ -306,10 +307,16 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         // From now on assume eta3 = 1!
         eta3 = 1.0;
         kappa3 = 0.0;
+        thickness = 1; // OPD is known to be linear in thickness, want to compute for many thicknesses at once, don't have vectorized implementation...
 
         EvalOpticalPathDifference(eta1, viewAngle, 0, eta2, thickness, OPD, OPDSigma);
+        float4 rayOPD = OPD * bsdfData.iridescenceThicknessSphereModel;
 
-        EvalIridescenceSphereModel(eta1, viewAngle, eta2, eta3, kappa3, OPD, preLightData.rayFGD);
+        EvalIridescenceSphereModel(eta1, viewAngle, eta2, eta3, kappa3, rayOPD, preLightData.rayFGD);
+        preLightData.rayFGD[0] *= _RayMask[0];
+        preLightData.rayFGD[1] *= _RayMask[1];
+        preLightData.rayFGD[2] *= _RayMask[2];
+        preLightData.rayFGD[3] *= _RayMask[3];
     #endif // IRIDESCENCE_TRANSPARENT_SPHERE
     }
 
