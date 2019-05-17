@@ -10,6 +10,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         protected static class Styles
         {
             public static GUIContent surfaceTypeText = new GUIContent("Surface Type");
+            public static GUIContent screenSpaceTransmissionText = new GUIContent("Screen Space Transmission");
             public static GUIContent doubleSidedEnableText = new GUIContent("Double Sided");
             public static GUIContent doubleSidedNormalModeText = new GUIContent("Normal Mode", "This will modify the normal base on the selected mode. Mirror: Mirror the normal with vertex normal plane, Flip: Flip the normal");
         }
@@ -18,7 +19,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         {
             Opaque,
             Transparent
-            // TransparentSphere
         }
 
         public enum DoubleSidedNormalMode
@@ -35,6 +35,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         // protected MaterialProperty transparentBackfaceEnable = null;
         // protected const string kTransparentBackfaceEnable = "_TransparentBackfaceEnable";
 
+        protected MaterialProperty screenSpaceTransmission = null;
+        protected const string kScreenSpaceTransmission = "_ScreenSpaceTransmission";
 
         // Double Sided
         protected MaterialProperty doubleSidedEnable = null;
@@ -57,6 +59,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         protected void FindProperties(MaterialProperty[] props)
         {
             surfaceType = FindProperty(kSurfaceType, props, false);
+
+            screenSpaceTransmission = FindProperty(kScreenSpaceTransmission, props, false);
 
             doubleSidedEnable = FindProperty(kDoubleSidedEnable, props, false);
             doubleSidedNormalMode = FindProperty(kDoubleSidedNormalMode, props, false);
@@ -120,6 +124,12 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             {
                 SurfaceTypePopup();
 
+                var mode = (SurfaceType)surfaceType.floatValue;
+                if (mode == SurfaceType.Transparent)
+                {
+                    m_MaterialEditor.ShaderProperty(screenSpaceTransmission, Styles.screenSpaceTransmissionText);
+                }
+
                 m_MaterialEditor.ShaderProperty(doubleSidedEnable, Styles.doubleSidedEnableText);
 
                 if (doubleSidedEnable.floatValue > 0.0f)
@@ -177,6 +187,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             bool doubleSidedEnable = material.HasProperty(kDoubleSidedEnable) && material.GetFloat(kDoubleSidedEnable) > 0.0f;
             CoreUtils.SetKeyword(material, "_DOUBLESIDED_ON", doubleSidedEnable);
 
+            bool screenSpaceTransmission = material.HasProperty(kScreenSpaceTransmission) && material.GetFloat(kScreenSpaceTransmission) > 0.0f;
+
             switch (surfaceType)
             {
                 case SurfaceType.Opaque:
@@ -198,7 +210,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     material.renderQueue = (int)HDRenderQueue.Priority.Transparent; // + (int)material.GetFloat(kTransparentSortPriority);
 
                     material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                    material.SetInt("_DstBlend", screenSpaceTransmission ? (int) UnityEngine.Rendering.BlendMode.Zero : (int)UnityEngine.Rendering.BlendMode.One);
 
                     // Enable TransparentBackface pass if material is double sided
                     material.SetShaderPassEnabled(HDShaderPassNames.s_TransparentBackfaceStr, doubleSidedEnable);

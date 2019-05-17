@@ -218,6 +218,7 @@ struct PreLightData
     float3 specularFGD;              // Store preintegrated BSDF for both specular and diffuse
     float  diffuseFGD;
     float3 transmissiveFGD;          // FGD for transmission through film
+    float3 rayFGD[4];
 
     // Area lights (17 VGPRs)
     // TODO: 'orthoBasisViewNormal' is just a rotation around the normal and should thus be just 1x VGPR.
@@ -299,6 +300,17 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
         iridescenceFGD = EvalIridescenceCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma, _IridescenceUsePhaseShift);
         iridescenceTransmissiveFGD = EvalIridescenceTransmissionCorrectOPD(eta1, viewAngle, viewAngleVar, eta2, eta3, kappa3, OPD, OPDSigma, _IridescenceUsePhaseShift);
+
+    #ifdef IRIDESCENCE_TRANSPARENT_SPHERE
+        // IridescenceFGD for different light paths with multiple reflection/transmission...
+        // From now on assume eta3 = 1!
+        eta3 = 1.0;
+        kappa3 = 0.0;
+
+        EvalOpticalPathDifference(eta1, viewAngle, 0, eta2, thickness, OPD, OPDSigma);
+
+        EvalIridescenceSphereModel(eta1, viewAngle, eta2, eta3, kappa3, OPD, preLightData.rayFGD);
+    #endif // IRIDESCENCE_TRANSPARENT_SPHERE
     }
 
     float specularReflectivity;
@@ -660,7 +672,30 @@ IndirectLighting EvaluateBSDF_SSLighting(LightLoopContext lightLoopContext,
     IndirectLighting lighting;
     ZERO_INITIALIZE(IndirectLighting, lighting);
 
-    // TODO
+    float mipLevel = 0;
+    float weight = 1;
+    float2 samplingPositionNDC = posInput.positionNDC;
+
+    float3 preLD = SAMPLE_TEXTURE2D_LOD(
+        _ColorPyramidTexture,
+        s_trilinear_clamp_sampler,
+        // Offset by half a texel to properly interpolate between this pixel and its mips
+        samplingPositionNDC * _ColorPyramidScale.xy + _ColorPyramidSize.zw * 0.5,
+        mipLevel
+    ).rgb;
+
+    UpdateLightingHierarchyWeights(hierarchyWeight, weight); // Shouldn't be needed, but safer in case we decide to change hierarchy priority
+
+#ifdef IRIDESCENCE_TRANSPARENT_SPHERE
+    float3 T = preLightData.rayFGD[1]; // 0th ray is reflection (R), 1st ray is 2x transmission (TT), 2nd ray is (TRT)
+#else
+    float3 T = preLightData.transmissiveFGD;
+#endif // IRIDESCENCE_TRANSPARENT_SPHERE
+
+    // -------------------------------
+    // Assign color
+    // -------------------------------
+    lighting.specularTransmitted = T * preLD.rgb * weight;
 
     return lighting;
 }
@@ -705,20 +740,6 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
 
     float iblMipLevel = 0;
 
-
-    float viewAngle = preLightData.NdotV;
-    float thickness = bsdfData.iridescenceThickness;
-    float eta1 = 1.0; // Default is air
-    float eta2 = bsdfData.iridescenceEta2;
-    float3 eta3 = 1.0;
-    float3 kappa3 = 0.0;
-
-    float OPD, OPDSigma;
-    EvalOpticalPathDifference(eta1, viewAngle, 0, eta2, thickness, OPD, OPDSigma);
-
-    real3 FGDi[4];
-    EvalIridescenceSphereModel(eta1, viewAngle, eta2, eta3, kappa3, OPD, FGDi);
-
     envLighting = float3(0,0,0);
 
     float3 Vi = V;
@@ -726,8 +747,12 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
 
     for (int i = 0; i < 4; ++i)
     {
-        float4 preLD = SampleEnv(lightLoopContext, lightData.envIndex, Li, iblMipLevel);
-        envLighting += FGDi[i] * preLD.rgb;
+        // Do transmission in EvaluateBSDF_SSLighting()
+        if (i != 1)
+        {
+            float4 preLD = SampleEnv(lightLoopContext, lightData.envIndex, Li, iblMipLevel);
+            envLighting += preLightData.rayFGD[i] * preLD.rgb;
+        }
 
         float3 Vinext = -reflect(-Li, Vi);
         float3 Linext = -Vi;
@@ -784,12 +809,6 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
 #endif // IRIDESCENCE_DISPLAY_REFERENCE_IBL
 
 
-#ifdef IRIDESCENCE_ENABLE_TRANSMISSION
-    // TODO transmission
-    envLighting += preLightData.transmissiveFGD * SampleEnv(lightLoopContext, lightData.envIndex, preLightData.iblT, 0);
-#endif // IRIDESCENCE_ENABLE_TRANSMISSION
-
-
     UpdateLightingHierarchyWeights(hierarchyWeight, weight);
     envLighting *= weight * lightData.multiplier;
 
@@ -834,6 +853,9 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
     // enables opacity to affect it (in ApplyBlendMode()) while the rest of specularLighting escapes it.
 
     specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
+#ifdef IRIDESCENCE_ENABLE_TRANSMISSION
+    specularLighting += lighting.indirect.specularTransmitted;
+#endif // IRIDESCENCE_ENABLE_TRANSMISSION
     // Rescale the GGX to account for the multiple scattering.
     specularLighting *= 1.0 + bsdfData.fresnel0 * preLightData.energyCompensation;
 

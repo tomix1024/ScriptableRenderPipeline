@@ -70,6 +70,8 @@ Shader "HDRenderPipeline/Iridescence"
         [HideInInspector] _ZTestModeDistortion("_ZTestModeDistortion", Int) = 8
         [HideInInspector] _ZTestGBuffer("_ZTestGBuffer", Int) = 4
 
+        [HideInInspector][ToggleUI] _ScreenSpaceTransmission("Screen space transmission", Float) = 0.0
+
         [HideInInspector][ToggleUI] _DoubleSidedEnable("Double sided enable", Float) = 0.0
         [HideInInspector] _DoubleSidedNormalMode("Double sided normal mode", Float) = 1
         [HideInInspector] _DoubleSidedConstants("_DoubleSidedConstants", Vector) = (1, 1, -1, 0)
