@@ -1043,9 +1043,9 @@ void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3
     const int N = 2;
 
     real3 Ip[2+N];
-    real3 C0p[2+N];
+    real3 C0p[2+N]; // product of C0's accumulated so far for each light path
     real3 Is[2+N];
-    real3 C0s[2+N];
+    real3 C0s[2+N]; // product of C0's accumulated so far for each light path
     // real3 I[2+N]; // result
 
 
@@ -1086,8 +1086,8 @@ void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3
             Ip[i] += C0p[i] * (reflectionCmSmp - (iridescenceData.reflectionC0p + 1));
             Is[i] += C0s[i] * (reflectionCmSms - (iridescenceData.reflectionC0s + 1));
 
-            C0p[j] *= iridescenceData.reflectionC0p + 1;
-            C0s[j] *= iridescenceData.reflectionC0s + 1;
+            C0p[i] *= iridescenceData.reflectionC0p + 1;
+            C0s[i] *= iridescenceData.reflectionC0s + 1;
         }
     }
 
