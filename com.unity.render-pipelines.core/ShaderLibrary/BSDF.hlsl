@@ -1090,8 +1090,8 @@ void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3
             Is[i] *= iridescenceData.reflectionC0s + 1;
 
             // TODO fix this: C0 * C0 is counted twice this way!
-            Ip[i] += C0p[i] * reflectionCmSmp[i];
-            Is[i] += C0s[i] * reflectionCmSms[i];
+            Ip[i] += C0p[i] * reflectionCmSmp[j];
+            Is[i] += C0s[i] * reflectionCmSms[j];
 
             C0p[i] *= iridescenceData.reflectionC0p + 1;
             C0s[i] *= iridescenceData.reflectionC0s + 1;
