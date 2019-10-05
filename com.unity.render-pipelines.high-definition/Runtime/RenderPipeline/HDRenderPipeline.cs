@@ -117,6 +117,7 @@ namespace UnityEngine.Rendering.HighDefinition
         BlueNoise m_BlueNoise;
 
         IBLFilterBSDF[] m_IBLFilterArray = null;
+        ComputeLightDirMoments m_ComputeLightDirMoments = null;
 
         ComputeShader m_ScreenSpaceReflectionsCS { get { return defaultResources.shaders.screenSpaceReflectionsCS; } }
         int m_SsrTracingKernel      = -1;
@@ -405,9 +406,11 @@ namespace UnityEngine.Rendering.HighDefinition
                 m_IBLFilterArray[0] = new IBLFilterGGX(defaultResources, m_MipGenerator);
             }
 
+            m_ComputeLightDirMoments = new ComputeLightDirMoments(asset.renderPipelineResources);
+
             InitializeLightLoop(m_IBLFilterArray);
 
-            m_SkyManager.Build(asset, defaultResources, m_IBLFilterArray);
+            m_SkyManager.Build(asset, defaultResources, m_IBLFilterArray, m_ComputeLightDirMoments);
 
             InitializeVolumetricLighting();
             InitializeSubsurfaceScattering();
@@ -2331,6 +2334,9 @@ namespace UnityEngine.Rendering.HighDefinition
                         if (!m_IBLFilterArray[bsdfIdx].IsInitialized())
                             m_IBLFilterArray[bsdfIdx].Initialize(cmd);
                     }
+
+                    if (!m_ComputeLightDirMoments.IsInitialized())
+                        m_ComputeLightDirMoments.Initialize(cmd);
 
                     foreach (var material in m_MaterialList)
                         material.RenderInit(cmd);

@@ -121,6 +121,8 @@ namespace UnityEngine.Rendering.HighDefinition
             public ComputeShader inScatteredRadiancePrecomputationCS;
             [Reload("Runtime/Sky/PhysicallyBasedSky/PhysicallyBasedSky.shader")]
             public Shader        physicallyBasedSkyPS;
+            [Reload("Runtime/Material/PreIntegratedLightDir/ComputeLightDirMoments.shader")]
+            public Shader computeLightDirMomentsPS;
 
             // Material
             [Reload("Runtime/Material/PreIntegratedFGD/PreIntegratedFGD_GGXDisneyDiffuse.shader")]

@@ -5,9 +5,14 @@ namespace UnityEngine.Rendering.HighDefinition
     internal class SkyRenderingContext
     {
         IBLFilterBSDF[]         m_IBLFilterArray;
+        ComputeLightDirMoments  m_ComputeLightDirMoments;
         RTHandle                m_SkyboxCubemapRT;
         RTHandle                m_SkyboxBSDFCubemapIntermediate;
         CubemapArray            m_SkyboxBSDFCubemapArray;
+        RTHandle                m_SkyboxLightDirMomentsRT1;
+        RTHandle                m_SkyboxLightDirMomentsRT2;
+        RTHandle                m_SkyboxLightDirMomentsRT3;
+        CubemapArray            m_SkyboxLightDirMomentsArray;
         RTHandle                m_SkyboxMarginalRowCdfRT;
         RTHandle                m_SkyboxConditionalCdfRT;
         Vector4                 m_CubemapScreenSize;
@@ -15,6 +20,7 @@ namespace UnityEngine.Rendering.HighDefinition
         Matrix4x4[]             m_CameraRelativeViewMatrices      = new Matrix4x4[6];
         bool                    m_SupportsConvolution = false;
         bool                    m_SupportsMIS = false;
+        bool                    m_SupportsLightDirMoments = false;
         BuiltinSkyParameters    m_BuiltinParameters = new BuiltinSkyParameters();
         bool                    m_NeedUpdate = true;
 
@@ -28,12 +34,31 @@ namespace UnityEngine.Rendering.HighDefinition
 
         public RenderTexture cubemapRT => m_SkyboxCubemapRT;
         public Texture reflectionTexture => m_SkyboxBSDFCubemapArray;
+        public Texture lightDirMomentsTexture => m_SkyboxLightDirMomentsArray;
         public SphericalHarmonicsL2 ambientProbe => m_AmbientProbe;
+
+        public SkyRenderingContext(IBLFilterBSDF[] iblFilterBDSDFArray, ComputeLightDirMoments computeLightDirMoments, int resolution, bool supportsConvolution)
+        {
+            m_IBLFilterArray = iblFilterBDSDFArray;
+            m_ComputeLightDirMoments = computeLightDirMoments;
+            m_SupportsConvolution = supportsConvolution;
+            m_SupportsLightDirMoments = supportsConvolution && computeLightDirMoments != null;
+
+            // Compute buffer storing the resulting SH from diffuse convolution. L2 SH => 9 float per component.
+            m_AmbientProbeResult = new ComputeBuffer(27, 4);
+            var hdrp = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
+            m_ComputeAmbientProbeCS = hdrp.renderPipelineResources.shaders.ambientProbeConvolutionCS;
+            m_ComputeAmbientProbeKernel = m_ComputeAmbientProbeCS.FindKernel("AmbientProbeConvolution");
+
+            RebuildTextures(resolution);
+        }
 
         public SkyRenderingContext(IBLFilterBSDF[] iblFilterBDSDFArray, int resolution, bool supportsConvolution)
         {
             m_IBLFilterArray = iblFilterBDSDFArray;
+            m_ComputeLightDirMoments = null;
             m_SupportsConvolution = supportsConvolution;
+            m_SupportsLightDirMoments = false;
 
             // Compute buffer storing the resulting SH from diffuse convolution. L2 SH => 9 float per component.
             m_AmbientProbeResult = new ComputeBuffer(27, 4);
@@ -60,6 +85,16 @@ namespace UnityEngine.Rendering.HighDefinition
                 CoreUtils.Destroy(m_SkyboxBSDFCubemapArray);
                 m_SkyboxBSDFCubemapArray = null;
 
+                RTHandles.Release(m_SkyboxLightDirMomentsRT1);
+                m_SkyboxLightDirMomentsRT1 = null;
+                RTHandles.Release(m_SkyboxLightDirMomentsRT2);
+                m_SkyboxLightDirMomentsRT2 = null;
+                RTHandles.Release(m_SkyboxLightDirMomentsRT3);
+                m_SkyboxLightDirMomentsRT3 = null;
+
+                CoreUtils.Destroy(m_SkyboxLightDirMomentsArray);
+                m_SkyboxLightDirMomentsArray = null;
+
                 RTHandles.Release(m_SkyboxConditionalCdfRT);
                 m_SkyboxConditionalCdfRT = null;
 
@@ -83,6 +118,22 @@ namespace UnityEngine.Rendering.HighDefinition
                         filterMode = FilterMode.Trilinear,
                         anisoLevel = 0,
                         name = "SkyboxCubemapConvolution"
+                    };
+                }
+
+                if (m_SupportsLightDirMoments)
+                {
+                    m_SkyboxLightDirMomentsRT1 = RTHandles.Alloc(resolution, resolution, colorFormat: GraphicsFormat.R16G16B16A16_SFloat, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxLightDirMomentsRT1");
+                    m_SkyboxLightDirMomentsRT2 = RTHandles.Alloc(resolution, resolution, colorFormat: GraphicsFormat.R16G16B16A16_SFloat, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxLightDirMomentsRT2");
+                    m_SkyboxLightDirMomentsRT3 = RTHandles.Alloc(resolution, resolution, colorFormat: GraphicsFormat.R16G16B16A16_SFloat, dimension: TextureDimension.Cube, useMipMap: true, autoGenerateMips: false, filterMode: FilterMode.Trilinear, name: "SkyboxLightDirMomentsRT3");
+                    m_SkyboxLightDirMomentsArray = new CubemapArray(resolution, 3*m_IBLFilterArray.Length, TextureFormat.RGBAHalf, true)
+                    {
+                        hideFlags = HideFlags.HideAndDontSave,
+                        wrapMode = TextureWrapMode.Repeat,
+                        wrapModeV = TextureWrapMode.Clamp,
+                        filterMode = FilterMode.Trilinear,
+                        anisoLevel = 0,
+                        name = "SkyboxCubemapConvolutionLightDirMoments"
                     };
                 }
 
@@ -131,6 +182,13 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 CoreUtils.Destroy(m_SkyboxBSDFCubemapArray);
             }
+            RTHandles.Release(m_SkyboxLightDirMomentsRT1);
+            RTHandles.Release(m_SkyboxLightDirMomentsRT2);
+            RTHandles.Release(m_SkyboxLightDirMomentsRT3);
+            if (m_SkyboxLightDirMomentsArray != null)
+            {
+                CoreUtils.Destroy(m_SkyboxLightDirMomentsArray);
+            }
 
             m_AmbientProbeResult.Release();
 
@@ -168,6 +226,29 @@ namespace UnityEngine.Rendering.HighDefinition
                     for(int i = 0; i < 6; ++i)
                     {
                         m_BuiltinParameters.commandBuffer.CopyTexture(m_SkyboxBSDFCubemapIntermediate, i, m_SkyboxBSDFCubemapArray, 6 * bsdfIdx + i);
+                    }
+                }
+            }
+        }
+
+        void RenderLightDirMomentsConvolution(SkyUpdateContext skyContext)
+        {
+            // TODO Generate moments one texture slice at a time
+            m_ComputeLightDirMoments.Compute(m_BuiltinParameters.commandBuffer, m_SkyboxCubemapRT, m_SkyboxLightDirMomentsRT1, m_SkyboxLightDirMomentsRT2, m_SkyboxLightDirMomentsRT3);
+            RTHandle[] sourceSkyboxLightDirMoments = { m_SkyboxLightDirMomentsRT1, m_SkyboxLightDirMomentsRT2, m_SkyboxLightDirMomentsRT3 };
+
+            for (int momentsIdx = 0; momentsIdx < 3; ++momentsIdx)
+            {
+                m_BuiltinParameters.commandBuffer.GenerateMips(sourceSkyboxLightDirMoments[momentsIdx]);
+
+                for(int bsdfIdx = 0; bsdfIdx < m_IBLFilterArray.Length; ++bsdfIdx)
+                {
+                    // First of all filter this cubemap using the target filter
+                    m_IBLFilterArray[bsdfIdx].FilterCubemap(m_BuiltinParameters.commandBuffer, sourceSkyboxLightDirMoments[momentsIdx], m_SkyboxBSDFCubemapIntermediate);
+                    // Then copy it to the cubemap array slice
+                    for(int i = 0; i < 6; ++i)
+                    {
+                        m_BuiltinParameters.commandBuffer.CopyTexture(m_SkyboxBSDFCubemapIntermediate, i, m_SkyboxLightDirMomentsArray, 6 * (3 * bsdfIdx + momentsIdx) + i);
                     }
                 }
             }
@@ -263,6 +344,14 @@ namespace UnityEngine.Rendering.HighDefinition
                             using (new ProfilingSample(cmd, "Update Env: Convolve Lighting Cubemap"))
                             {
                                 RenderCubemapGGXConvolution(skyContext);
+                            }
+                        }
+
+                        if (m_SupportsLightDirMoments)
+                        {
+                            using (new ProfilingSample(cmd, "Update Env: Compute and Convolve Light Dir Moments Cubemap"))
+                            {
+                                RenderLightDirMomentsConvolution(skyContext);
                             }
                         }
 

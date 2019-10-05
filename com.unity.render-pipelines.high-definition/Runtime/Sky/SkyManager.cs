@@ -219,6 +219,8 @@ namespace UnityEngine.Rendering.HighDefinition
         public void SetGlobalSkyTexture(CommandBuffer cmd)
         {
             cmd.SetGlobalTexture(HDShaderIDs._SkyTexture, skyReflection);
+            cmd.SetGlobalTexture(HDShaderIDs._SkyTextureLightDirMoments, m_SkyRenderingContext.lightDirMomentsTexture);
+
             float mipCount = Mathf.Clamp(Mathf.Log((float)skyReflection.width, 2.0f) + 1, 0.0f, 6.0f);
             cmd.SetGlobalFloat(HDShaderIDs._SkyTextureMipCount, mipCount);
         }
@@ -248,11 +250,11 @@ namespace UnityEngine.Rendering.HighDefinition
 
 #endif
 
-        public void Build(HDRenderPipelineAsset hdAsset, RenderPipelineResources defaultResources, IBLFilterBSDF[] iblFilterBSDFArray)
+        public void Build(HDRenderPipelineAsset hdAsset, RenderPipelineResources defaultResources, IBLFilterBSDF[] iblFilterBSDFArray, ComputeLightDirMoments computeLightDirMoments)
         {
-            m_SkyRenderingContext = new SkyRenderingContext(iblFilterBSDFArray, (int)hdAsset.currentPlatformRenderPipelineSettings.lightLoopSettings.skyReflectionSize, true);
+            m_SkyRenderingContext = new SkyRenderingContext(iblFilterBSDFArray, computeLightDirMoments, (int)hdAsset.currentPlatformRenderPipelineSettings.lightLoopSettings.skyReflectionSize, true);
 #if UNITY_EDITOR
-            m_PreviewSkyRenderingContext = new SkyRenderingContext(iblFilterBSDFArray, (int)hdAsset.currentPlatformRenderPipelineSettings.lightLoopSettings.skyReflectionSize, true);
+            m_PreviewSkyRenderingContext = new SkyRenderingContext(iblFilterBSDFArray, computeLightDirMoments, (int)hdAsset.currentPlatformRenderPipelineSettings.lightLoopSettings.skyReflectionSize, true);
 #endif
 
             m_StandardSkyboxMaterial = CoreUtils.CreateEngineMaterial(defaultResources.shaders.skyboxCubemapPS);
