@@ -30,17 +30,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         private void LoadData(out Texture2DArray texture, out float muOffset, out float muScale, out float sigmaOffset, out float sigmaScale)
         {
-            int numMu = SpectralSensitivityDataGauss.numMu;
-            int numSigma = SpectralSensitivityDataGauss.numSigma;
-            float maxMu = SpectralSensitivityDataGauss.maxMu;
-            float maxSigma = SpectralSensitivityDataGauss.maxSigma;
+            int numMu = SpectralSensitivityDataSRGB.numMu;
+            int numSigma = SpectralSensitivityDataSRGB.numSigma;
+            float maxMu = SpectralSensitivityDataSRGB.maxMu;
+            float maxSigma = SpectralSensitivityDataSRGB.maxSigma;
 
-            float[] Rmag = SpectralSensitivityDataGauss.Rmag;
-            float[] Rphi = SpectralSensitivityDataGauss.Rphi;
-            float[] Gmag = SpectralSensitivityDataGauss.Gmag;
-            float[] Gphi = SpectralSensitivityDataGauss.Gphi;
-            float[] Bmag = SpectralSensitivityDataGauss.Bmag;
-            float[] Bphi = SpectralSensitivityDataGauss.Bphi;
+            float[] Rmag = SpectralSensitivityDataSRGB.Rmag;
+            float[] Rphi = SpectralSensitivityDataSRGB.Rphi;
+            float[] Gmag = SpectralSensitivityDataSRGB.Gmag;
+            float[] Gphi = SpectralSensitivityDataSRGB.Gphi;
+            float[] Bmag = SpectralSensitivityDataSRGB.Bmag;
+            float[] Bphi = SpectralSensitivityDataSRGB.Bphi;
 
             texture = new Texture2DArray(numMu, numSigma, 3, TextureFormat.RGFloat, mipChain: false, linear: true);
 

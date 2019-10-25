@@ -5,7 +5,11 @@ Shader "HDRenderPipeline/Iridescence2DRect"
         [Toggle(IRIDESCENCE_USE_PREFILTERED_VDOTH)]_IridescenceVdotH("Prefiltered VdotH", Float) = 0
         [Toggle(IRIDESCENCE_USE_PREFILTERED_VDOTL)]_IridescenceVdotL("Prefiltered VdotL", Float) = 0
 
-        _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 3.0)) = 1.0
+        _SmoothnessMin("Smoothness Min", Range(0.0, 1.0)) = 0.0
+        _SmoothnessMax("Smoothness Max", Range(0.0, 1.0)) = 1.0
+
+        _IridescenceThicknessMin("Iridescence Thickness Min (µm)", Range(0.0, 3.0)) = 1.0
+        _IridescenceThicknessMax("Iridescence Thickness Max (µm)", Range(0.0, 3.0)) = 1.0
         _IridescenceEta2("Iridescence Eta 2", Range(1.0, 5.0)) = 1.21
         _IridescenceEta3("Iridescence Eta 3", Range(1.0, 5.0)) = 2.0
         _IridescenceKappa3("Iridescence Kappa 3", Range(0.0, 5.0)) = 0.0
@@ -82,7 +86,11 @@ Shader "HDRenderPipeline/Iridescence2DRect"
 
             // Uniform values here!
 
-            float _IridescenceThickness;
+            float _SmoothnessMin;
+            float _SmoothnessMax;
+
+            float _IridescenceThicknessMin;
+            float _IridescenceThicknessMax;
             float _IridescenceEta2;
             float _IridescenceEta3;
             float _IridescenceKappa3;
@@ -355,8 +363,8 @@ Shader "HDRenderPipeline/Iridescence2DRect"
                 shadingData.viewDirWS = float3(sinTheta, 0, cosTheta);
                 shadingData.normalWS = float3(0,0,1);
 
-                shadingData.perceptualRoughness = input.texCoord.y;
-                shadingData.iridescenceThickness = _IridescenceThickness;
+                shadingData.perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(lerp(_SmoothnessMin, max(_SmoothnessMin, _SmoothnessMax), input.texCoord.y));
+                shadingData.iridescenceThickness = lerp(_IridescenceThicknessMin, max(_IridescenceThicknessMin, _IridescenceThicknessMax), input.texCoord.y);
                 shadingData.iridescenceEta2 = _IridescenceEta2;
                 shadingData.iridescenceEta3 = _IridescenceEta3;
                 shadingData.iridescenceKappa3 = _IridescenceKappa3;

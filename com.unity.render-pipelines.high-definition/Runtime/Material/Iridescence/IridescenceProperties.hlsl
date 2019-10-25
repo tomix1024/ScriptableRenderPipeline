@@ -4,8 +4,8 @@
 // Otherwise those parameters are not bound correctly at runtime.
 // ===========================================================================
 
-// TEXTURE2D(_NormalMap);
-// SAMPLER(sampler_NormalMap);
+TEXTURE2D(_NormalMap);
+SAMPLER(sampler_NormalMap);
 
 TEXTURE2D(_IridescenceThicknessMap);
 SAMPLER(sampler_IridescenceThicknessMap);
@@ -23,9 +23,11 @@ float _Smoothness;
 
 float4 _Fresnel0;
 
-// float _NormalScale;
+float _NormalScale;
+float4 _NormalMap_ST;
 
 float4 _IridescenceThicknessMap_ST;
+float _IridescenceThicknessMapScale;
 
 float _IridescenceThickness;
 float _IridescenceEta2;

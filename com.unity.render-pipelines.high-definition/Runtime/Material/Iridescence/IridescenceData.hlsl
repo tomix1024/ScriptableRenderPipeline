@@ -8,7 +8,14 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
 {
     ApplyDoubleSidedFlipOrMirror(input); // Apply double sided flip on the vertex normal
 
+    // Apply offset and tiling
+    float2 uvNormal = input.texCoord0.xy * _NormalMap_ST.xy + _NormalMap_ST.zw;
+
     surfaceData.normalWS = input.worldToTangent[2].xyz;
+#ifdef _NORMALMAP
+    float3 normalTS = UnpackNormalmapRGorAG(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uvNormal), _NormalScale);
+    GetNormalWS(input, normalTS, surfaceData.normalWS);
+#endif
 
     // No occlusion...
     surfaceData.ambientOcclusion = 1;
@@ -28,7 +35,7 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
 
 #ifdef IRIDESCENCE_USE_THICKNESS_MAP
     float2 uvPolar2 = float2(atan2(surfaceData.normalWS.z, surfaceData.normalWS.x) / TWO_PI, acos(surfaceData.normalWS.y) / PI); // TODO verify axes and orientations
-    surfaceData.iridescenceThickness *= SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvThickness).x;
+    surfaceData.iridescenceThickness += _IridescenceThicknessMapScale * SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvThickness).x;
 
     // For sphere model:
 
@@ -38,12 +45,11 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     for (int i = 0; i < 4; ++i)
     {
         float2 uvPolar = float2(atan2(normalOS.z, normalOS.x) / TWO_PI, acos(-normalOS.y) / PI); // TODO verify axes and orientations
-        surfaceData.iridescenceThicknessSphereModel[i] *= SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvPolar).x;
+        surfaceData.iridescenceThicknessSphereModel[i] += _IridescenceThicknessMapScale * SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvPolar).x;
 
         normalOS = -reflect(-normalOS, viewDirOS);
         viewDirOS = reflect(viewDirOS, normalOS);
     }
-
 #endif // IRIDESCENCE_USE_THICKNESS_MAP
 
 #if defined(DEBUG_DISPLAY)

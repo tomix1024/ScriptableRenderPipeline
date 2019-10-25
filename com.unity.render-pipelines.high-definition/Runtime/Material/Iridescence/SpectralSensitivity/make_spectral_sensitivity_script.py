@@ -10,9 +10,9 @@ def ReplaceStrings(template, replace_strings):
 def Array2String(array):
     return np.array2string(array, prefix='', max_line_width=120, separator=',', formatter={'float': lambda x: '%ff' % x })[1:-1]
 
-NAME = 'Gauss'
+NAME = 'SRGB'
 
-sensitivity_filename = 'sensitivity.txt'
+sensitivity_filename = 'sensitivity_srgb.txt'
 template_filename = 'SpectralSensitivityDataNAME.cs.template'
 output_filename = 'SpectralSensitivityData' + NAME + '.cs'
 
