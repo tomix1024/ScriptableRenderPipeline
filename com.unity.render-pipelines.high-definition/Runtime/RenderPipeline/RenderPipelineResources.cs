@@ -103,6 +103,8 @@ namespace UnityEngine.Rendering.HighDefinition
             public Shader GGXConvolvePS;
             [Reload("Runtime/Material/Fabric/CharlieConvolve.shader")]
             public Shader charlieConvolvePS;
+            [Reload("Runtime/Material/ComputeWSdotL/ComputeWSdotL.shader")]
+            public Shader computeWSdotLPS;
             [Reload("Runtime/Lighting/AtmosphericScattering/OpaqueAtmosphericScattering.shader")]
             public Shader opaqueAtmosphericScatteringPS;
             [Reload("Runtime/Sky/HDRISky/HDRISky.shader")]
@@ -133,6 +135,10 @@ namespace UnityEngine.Rendering.HighDefinition
             public Shader preIntegratedFGD_WardPS;
             [Reload("Runtime/Material/AxF/PreIntegratedFGD_CookTorrance.shader")]
             public Shader preIntegratedFGD_CookTorrancePS;
+            [Reload("Runtime/Material/PreIntegratedVdotH/preIntegratedVdotH_GGX.shader")]
+            public Shader preIntegratedVdotH_GGXPS;
+            [Reload("Runtime/Material/PreIntegratedVdotL/preIntegratedVdotL_GGX.shader")]
+            public Shader preIntegratedVdotL_GGXPS;
             [Reload("Runtime/Material/CustomPass/DefaultRenderer.shader")]
             public Shader defaultRendererCustomPass;
 

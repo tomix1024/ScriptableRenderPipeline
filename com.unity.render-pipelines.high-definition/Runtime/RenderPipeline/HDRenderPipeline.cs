@@ -405,6 +405,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 m_IBLFilterArray = new IBLFilterBSDF[1];
                 m_IBLFilterArray[0] = new IBLFilterGGX(defaultResources, m_MipGenerator);
             }
+            m_ComputeWSdotL = new ComputeWSdotL(defaultResources);
 
             m_ComputeLightDirMoments = new ComputeLightDirMoments(asset.renderPipelineResources);
 
@@ -827,6 +828,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 m_IBLFilterArray[bsdfIdx].Cleanup();
             }
 
+            m_ComputeWSdotL.Cleanup();
             m_PostProcessSystem.Cleanup();
             m_AmbientOcclusionSystem.Cleanup();
             m_BlueNoise.Cleanup();

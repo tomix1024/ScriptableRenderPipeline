@@ -15,6 +15,12 @@ namespace UnityEngine.Rendering.HighDefinition
         CubemapArray            m_SkyboxLightDirMomentsArray;
         RTHandle                m_SkyboxMarginalRowCdfRT;
         RTHandle                m_SkyboxConditionalCdfRT;
+        RTHandle                m_SkyboxWSdotL1CubemapRT;
+        RTHandle                m_SkyboxWSdotL2CubemapRT;
+        RTHandle                m_SkyboxWSdotL3CubemapRT;
+        RTHandle                m_SkyboxWSdotL1GGXCubemapRT;
+        RTHandle                m_SkyboxWSdotL2GGXCubemapRT;
+        RTHandle                m_SkyboxWSdotL3GGXCubemapRT;
         Vector4                 m_CubemapScreenSize;
         Matrix4x4[]             m_facePixelCoordToViewDirMatrices = new Matrix4x4[6];
         Matrix4x4[]             m_CameraRelativeViewMatrices      = new Matrix4x4[6];
@@ -36,6 +42,25 @@ namespace UnityEngine.Rendering.HighDefinition
         public Texture reflectionTexture => m_SkyboxBSDFCubemapArray;
         public Texture lightDirMomentsTexture => m_SkyboxLightDirMomentsArray;
         public SphericalHarmonicsL2 ambientProbe => m_AmbientProbe;
+        public Texture filteredWSdotL1Texture => m_SkyboxWSdotL1GGXCubemapRT;
+        public Texture filteredWSdotL2Texture => m_SkyboxWSdotL2GGXCubemapRT;
+        public Texture filteredWSdotL3Texture => m_SkyboxWSdotL3GGXCubemapRT;
+
+        public SkyRenderingContext(IBLFilterBSDF[] iblFilterBDSDFArray, ComputeWSdotL computeWSdotL, int resolution, bool supportsConvolution)
+        {
+            m_IBLFilterArray = iblFilterBDSDFArray;
+            m_ComputeWSdotL = computeWSdotL;
+            m_SupportsWSdotL = supportsConvolution;
+            m_SupportsConvolution = supportsConvolution;
+
+            // Compute buffer storing the resulting SH from diffuse convolution. L2 SH => 9 float per component.
+            m_AmbientProbeResult = new ComputeBuffer(27, 4);
+            var hdrp = HDRenderPipeline.defaultAsset;
+            m_ComputeAmbientProbeCS = hdrp.renderPipelineResources.shaders.ambientProbeConvolutionCS;
+            m_ComputeAmbientProbeKernel = m_ComputeAmbientProbeCS.FindKernel("AmbientProbeConvolution");
+
+            RebuildTextures(resolution);
+        }
 
         public SkyRenderingContext(IBLFilterBSDF[] iblFilterBDSDFArray, ComputeLightDirMoments computeLightDirMoments, int resolution, bool supportsConvolution)
         {
@@ -100,6 +125,41 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 RTHandles.Release(m_SkyboxMarginalRowCdfRT);
                 m_SkyboxMarginalRowCdfRT = null;
+
+                RTHandles.Release(m_SkyboxWSdotL1CubemapRT);
+                m_SkyboxWSdotL1CubemapRT = null;
+
+                RTHandles.Release(m_SkyboxWSdotL2CubemapRT);
+                m_SkyboxWSdotL2CubemapRT = null;
+
+                RTHandles.Release(m_SkyboxWSdotL3CubemapRT);
+                m_SkyboxWSdotL3CubemapRT = null;
+
+                RTHandles.Release(m_SkyboxWSdotL1GGXCubemapRT);
+                m_SkyboxWSdotL1GGXCubemapRT = null;
+
+                RTHandles.Release(m_SkyboxWSdotL2GGXCubemapRT);
+                m_SkyboxWSdotL2GGXCubemapRT = null;
+
+                RTHandles.Release(m_SkyboxWSdotL3GGXCubemapRT);
+                m_SkyboxWSdotL3GGXCubemapRT = null;
+            }
+
+            if (!m_SupportsWSdotL && (m_SkyboxWSdotL1CubemapRT != null))
+            {
+                RTHandles.Release(m_SkyboxWSdotL1CubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL2CubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL3CubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL1GGXCubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL2GGXCubemapRT);
+                RTHandles.Release(m_SkyboxWSdotL3GGXCubemapRT);
+
+                m_SkyboxWSdotL1CubemapRT = null;
+                m_SkyboxWSdotL2CubemapRT = null;
+                m_SkyboxWSdotL3CubemapRT = null;
+                m_SkyboxWSdotL1GGXCubemapRT = null;
+                m_SkyboxWSdotL2GGXCubemapRT = null;
+                m_SkyboxWSdotL3GGXCubemapRT = null;
             }
 
             // Reallocate everything
@@ -194,6 +254,12 @@ namespace UnityEngine.Rendering.HighDefinition
 
             RTHandles.Release(m_SkyboxMarginalRowCdfRT);
             RTHandles.Release(m_SkyboxConditionalCdfRT);
+            RTHandles.Release(m_SkyboxWSdotL1CubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL2CubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL3CubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL1GGXCubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL2GGXCubemapRT);
+            RTHandles.Release(m_SkyboxWSdotL3GGXCubemapRT);
         }
 
         void RenderSkyToCubemap(SkyUpdateContext skyContext)
@@ -344,6 +410,13 @@ namespace UnityEngine.Rendering.HighDefinition
                             using (new ProfilingSample(cmd, "Update Env: Convolve Lighting Cubemap"))
                             {
                                 RenderCubemapGGXConvolution(skyContext);
+                            }
+                        }
+                        if (m_SupportsWSdotL)
+                        {
+                            using (new ProfilingSample(cmd, "Update Env: Compute WSdotL Cubemaps"))
+                            {
+                                RenderWSdotLCubemaps(skyContext);
                             }
                         }
 

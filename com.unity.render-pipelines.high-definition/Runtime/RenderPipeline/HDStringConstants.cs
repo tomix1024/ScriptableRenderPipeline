@@ -664,6 +664,13 @@ namespace UnityEngine.Rendering.HighDefinition
         public static readonly int _PreIntegratedFGD_GGXDisneyDiffuse = Shader.PropertyToID("_PreIntegratedFGD_GGXDisneyDiffuse");
         public static readonly int _PreIntegratedFGD_CharlieAndFabric = Shader.PropertyToID("_PreIntegratedFGD_CharlieAndFabric");
 
+        public static readonly int _PreIntegratedVdotH_GGX = Shader.PropertyToID("_PreIntegratedVdotH_GGX");
+        public static readonly int _PreIntegratedVdotL_GGX = Shader.PropertyToID("_PreIntegratedVdotL_GGX");
+
+        public static readonly int _PreIntegratedWSdotL_X1_GGX = Shader.PropertyToID("_PreIntegratedWSdotL_X1_GGX");
+        public static readonly int _PreIntegratedWSdotL_X2_GGX = Shader.PropertyToID("_PreIntegratedWSdotL_X2_GGX");
+        public static readonly int _PreIntegratedWSdotL_XY_GGX = Shader.PropertyToID("_PreIntegratedWSdotL_XY_GGX");
+
         public static readonly int _ExposureTexture                = Shader.PropertyToID("_ExposureTexture");
         public static readonly int _PrevExposureTexture            = Shader.PropertyToID("_PrevExposureTexture");
         public static readonly int _PreviousExposureTexture        = Shader.PropertyToID("_PreviousExposureTexture");

@@ -110,6 +110,102 @@ real3 F_FresnelConductor(real3 eta, real3 etak2, real cosTheta)
     return 0.5 * (Rp + Rs);
 }
 
+real3 F_FresnelConductor(real3 eta, real3 etak2, real cosTheta, out real3 Rp, out real3 Rs)
+{
+    real cosTheta2 = cosTheta * cosTheta;
+    real sinTheta2 = 1.0 - cosTheta2;
+    real3 eta2 = eta * eta;
+
+    real3 t0 = eta2 - etak2 - sinTheta2;
+    real3 a2plusb2 = sqrt(t0 * t0 + 4.0 * eta2 * etak2);
+    real3 t1 = a2plusb2 + cosTheta2;
+    real3 a = sqrt(0.5 * (a2plusb2 + t0));
+    real3 t2 = 2.0 * a * cosTheta;
+    Rs = (t1 - t2) / (t1 + t2);
+
+    real3 t3 = cosTheta2 * a2plusb2 + sinTheta2 * sinTheta2;
+    real3 t4 = t2 * sinTheta2;
+    Rp = Rs * (t3 - t4) / (t3 + t4);
+
+    return 0.5 * (Rp + Rs);
+}
+
+// Phase shift due to a conducting material.
+// See [A Practical Extension to Microfacet Theory for the Modeling of Varying Iridescence]
+// Their implementation apparently uses n = eta * (1 + i kappa), but is inconsistent on that.
+// We use n = eta + i kappa
+void FresnelConductorPhase(real cosTheta,
+                                real3 eta1,
+                                real3 eta2, real3 kappa2,
+                                out real3 phiP, out real3 phiS)
+{
+    real sinThetaSq = 1.0 - Sq(cosTheta);
+    real3 A = Sq(eta2) - Sq(kappa2) - Sq(eta1)*sinThetaSq;
+    real3 B = sqrt(Sq(A) + 4*Sq(eta2)*Sq(kappa2));
+    real3 USq = (A+B) / 2.0;
+    real3 VSq = (B-A) / 2.0;
+    real3 U = sqrt(USq);
+    real3 V = sqrt(VSq);
+
+    phiS = atan2(-2*eta1*V*cosTheta, Sq(eta1*cosTheta) - USq - VSq);
+    phiP = atan2(2*eta1*cosTheta * (2*eta2*kappa2*U - (Sq(eta2) - Sq(kappa2)) * V),
+                 Sq((Sq(eta2)+Sq(kappa2))*cosTheta) - Sq(eta1)*B/*(USq+VSq)*/);
+}
+
+void ComplexSquareRoot(float3 sq_re, float3 sq_im, out float3 re, out float3 im)
+{
+    float3 phi = atan2(sq_im, sq_re);
+    float3 r = sqrt(sq_re * sq_re + sq_im * sq_im);
+
+    r = sqrt(r);
+    phi /= 2;
+
+    re = r * cos(phi);
+    im = r * sin(phi);
+}
+
+/*
+void F_FresnelConductorPhase(real3 eta_re, real3 eta_im, real cosTheta, out real3 phi_p, out real3 phi_s)
+{
+    real cosTheta_sq = cosTheta * cosTheta;
+
+    real3 eta_re_sq = eta_re * eta_re;
+    real3 eta_im_sq = eta_im * eta_im;
+
+    real3 eta_abs_sq = eta_re_sq + eta_im_sq;
+
+    real3 eta_sq_re = eta_re_sq - eta_im_sq;
+    // real3 eta_sq_im = 2 * eta_re * eta_im;
+
+    real3 eta_sq_re_sq = eta_sq_re * eta_sq_re;
+    // real3 eta_sq_im_sq = eta_sq_im * eta_sq_im;
+    real3 eta_sq_im_sq = 4 * eta_re_sq * eta_im_sq;
+
+    real3 eta_sq_inv_re = eta_sq_re_sq / (eta_sq_re_sq + eta_sq_im_sq);
+    real3 eta_sq_inv_im = -eta_sq_im_sq / (eta_sq_re_sq + eta_sq_im_sq);
+
+    real3 cosThetaTrans_sq_re = 1 - eta_sq_inv_re * (1 - cosTheta_sq);
+    real3 cosThetaTrans_sq_im = 0 - eta_sq_inv_im * (1 - cosTheta_sq);
+
+    real3 cosThetaTrans_re = 0; // TODO!
+    real3 cosThetaTrans_im = 0; // TODO!
+    ComplexSquareRoot(cosThetaTrans_sq_re, cosThetaTrans_sq_im, cosThetaTrans_re, cosThetaTrans_im);
+
+    real3 cosThetaTrans_re_sq = cosThetaTrans_re * cosThetaTrans_re;
+    real3 cosThetaTrans_im_sq = cosThetaTrans_im * cosThetaTrans_im;
+    real3 cosThetaTrans_abs_sq = cosThetaTrans_re_sq + cosThetaTrans_im_sq;
+
+    real3 rp_re = eta_abs_sq * cosTheta_sq - cosThetaTrans_abs_sq;
+    real3 rp_im = 2 * cosTheta * (eta_im * cosThetaTrans_re - eta_re * cosThetaTrans_im);
+
+    real3 rs_re = cosTheta_sq - eta_abs_sq * cosThetaTrans_abs_sq;
+    real3 rs_im = -2 * cosTheta * (eta_im * cosThetaTrans_re + eta_re * cosThetaTrans_im);
+
+    phi_p = atan2(rp_im, rp_re);
+    phi_s = atan2(rs_im, rs_re);
+}
+*/
+
 // Conversion FO/IOR
 
 TEMPLATE_2_REAL(IorToFresnel0, transmittedIor, incidentIor, return Sq((transmittedIor - incidentIor) / (transmittedIor + incidentIor)) )
@@ -444,6 +540,26 @@ real3 EvalSensitivity(real opd, real shift)
     return xyz / 1.0685e-7;
 }
 
+TEXTURE2D_ARRAY(_IridescenceSensitivityMap);
+SAMPLER(sampler_IridescenceSensitivityMap);
+real4 _IridescenceSensitivityMap_ST;
+
+real3 EvalSensitivityTable(real opd, real3 phi, real opdSigma = 0)
+{
+    real3 result;
+    real2 uv = TRANSFORM_TEX(real2(opd, opdSigma), _IridescenceSensitivityMap);
+    for (int index = 0; index < 3; ++index)
+    {
+        real2 magsqrt_phase = SAMPLE_TEXTURE2D_ARRAY_LOD(_IridescenceSensitivityMap, sampler_IridescenceSensitivityMap, uv, index, 0).rg;
+        real mag = Sq(magsqrt_phase.r);
+        real phase = magsqrt_phase.g;
+        result[index] = mag * cos(phase - phi[index]);
+        ///   cos(phase - phi)
+        /// = cos(phase) * cos(phi) + sin(phase) * sin(phi)
+    }
+    return result;
+}
+
 // Evaluate the reflectance for a thin-film layer on top of a dielectric medum.
 real3 EvalIridescence(real eta_1, real cosTheta1, real iridescenceThickness, real3 baseLayerFresnel0, real iorOverBaseLayer = 0.0)
 {
@@ -533,6 +649,217 @@ real3 EvalIridescence(real eta_1, real cosTheta1, real iridescenceThickness, rea
     }
 
     return I;
+}
+
+void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, out real OPD, out real OPDSigma)
+{
+    // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
+    real Dinc = layerThickness;
+
+    real sinTheta2Sq = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
+    real cosTheta2 = sqrt(1.0 - sinTheta2Sq);
+    real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1))); // cf. EKF
+
+    // Phase shift
+    OPD = 2*eta2 * Dinc * cosTheta2;
+    OPDSigma = 2*eta2 * Dinc * sqrt(cosTheta2Var);
+}
+
+void EvalOpticalPathDifferenceVdotL(real eta1, real VdotL, real VdotLVar, real eta2, real layerThickness, out real OPD, out real OPDSigma)
+{
+    // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
+    real Dinc = layerThickness;
+
+    real sinTheta2Sq = 0.5 * Sq(eta1 / eta2) * (1.0 - VdotL);
+    real cosTheta2 = sqrt(1.0 - sinTheta2Sq);
+    real cosTheta2Var = VdotLVar * Sq( 0.25 * Sq(eta1 / eta2) ) / (1 - 0.5 * Sq(eta1 / eta2) * (1 - VdotL)); // cf. EKF
+
+    // Phase shift
+    OPD = 2*eta2 * Dinc * cosTheta2;
+    OPDSigma = 2*eta2 * Dinc * sqrt(cosTheta2Var);
+}
+
+real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real3 eta3, real3 kappa3, real OPD, real OPDSigma, bool use_phase_shift = true)
+{
+    // Following line from original code is not needed for us, it create a discontinuity
+    // Force eta_2 -> eta_1 when Dinc -> 0.0
+    // real eta_2 = lerp(eta_1, eta_2, smoothstep(0.0, 0.03, Dinc));
+    // Evaluate the cosTheta on the base layer (Snell law)
+    real sinTheta2 = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
+
+    // Handle TIR
+    if (sinTheta2 > 1.0)
+        return real3(1.0, 1.0, 1.0);
+    //Or use this "artistic hack" to get more continuity even though wrong (test with dual normal maps to understand the difference)
+    //if( sinTheta2 > 1.0 ) { sinTheta2 = 2 - sinTheta2; }
+
+    real cosTheta2 = sqrt(1.0 - sinTheta2);
+
+    // First interface
+    real3 R12p, R12s;
+    F_FresnelConductor(eta2/eta1, 0, cosTheta1, R12p, R12s);
+    real3 T12p = 1.0 - R12p;
+    real3 T12s = 1.0 - R12s;
+
+    real phi21p = PI;
+    real phi21s = PI;
+    if (use_phase_shift)
+    {
+        phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
+        phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
+    }
+
+
+    // Second interface
+    real3 R23p, R23s;
+    F_FresnelConductor(eta3/eta2, kappa3/eta2, cosTheta2, R23p, R23s);
+
+    real3 phi23p = float3(0,0,0);
+    real3 phi23s = float3(0,0,0);
+    if (use_phase_shift)
+    {
+        FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
+    }
+
+
+    // Phase
+    real3 phi2p = phi21p + phi23p;
+    real3 phi2s = phi21s + phi23s;
+
+    // Compound terms
+    real3 R123p = R12p * R23p;
+    real3 r123p = sqrt(R123p);
+    real3 Rstarp = Sq(T12p) * R23p / (real3(1.0, 1.0, 1.0) - R123p);
+    real3 R123s = R12s * R23s;
+    real3 r123s = sqrt(R123s);
+    real3 Rstars = Sq(T12s) * R23s / (real3(1.0, 1.0, 1.0) - R123s);
+
+    // Reflectance term for m = 0 (DC term amplitude)
+    real3 C0p = R12p + Rstarp;
+    real3 C0s = R12s + Rstars;
+    // real3 I = C0p + C0s;
+    real3 Ip = C0p;
+    real3 Is = C0s;
+
+    // Reflectance term for m > 0 (pairs of diracs)
+    real3 Cmp = Rstarp - T12p;
+    real3 Cms = Rstars - T12s;
+    for (int m = 1; m <= 2; ++m)
+    {
+        Cmp *= r123p;
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi2p, m * OPDSigma);
+        Ip += Cmp * Smp;
+
+        Cms *= r123s;
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi2s, m * OPDSigma);
+        Is += Cms * Sms;
+    }
+
+    // This helps with black pixels:
+    real3 I = max(Is, float3(0,0,0)) + max(Ip, float3(0,0,0));
+
+    // TODO why do some directions return black values here!?
+    return 0.5 * I;
+}
+
+// Evaluate the reflectance for a thin-film layer on top of a conducting medum.
+real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, real3 eta3, real3 kappa3, bool use_phase_shift = true, bool use_ukf = false, real ukf_lambda = 1.0)
+{
+    // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
+    real Dinc = layerThickness;
+
+
+    // Following line from original code is not needed for us, it create a discontinuity
+    // Force eta_2 -> eta_1 when Dinc -> 0.0
+    // real eta_2 = lerp(eta_1, eta_2, smoothstep(0.0, 0.03, Dinc));
+    // Evaluate the cosTheta on the base layer (Snell law)
+    real sinTheta2sq = Sq(eta1 / eta2) * (1.0 - Sq(cosTheta1));
+
+    // Handle TIR
+    if (sinTheta2sq > 1.0)
+        return real3(1.0, 1.0, 1.0);
+    //Or use this "artistic hack" to get more continuity even though wrong (test with dual normal maps to understand the difference)
+    //if( sinTheta2sq > 1.0 ) { sinTheta2sq = 2 - sinTheta2sq; }
+
+    real cosTheta2 = sqrt(1.0 - sinTheta2sq);
+    real cosTheta2Var = cosTheta1Var * Sq( cosTheta1 * Sq(eta1 / eta2) ) / (1 - Sq(eta1 / eta2) * (1 - Sq(cosTheta1))); // cf. EKF
+
+    if (use_ukf)
+    {
+        real3 sigmaWeights = real3(0.5, ukf_lambda, 0.5) / (1 + ukf_lambda);
+        real3 sigmaPoints = cosTheta1.xxx + sqrt((1 + ukf_lambda) * cosTheta1Var) * real3(-1, 0, 1); // cosTheta1
+        real3 sigmaPointsBelow = sqrt(1.0 - Sq(eta1 / eta2) * (1.0 - Sq(sigmaPoints)));
+
+        cosTheta2 = dot(sigmaWeights, sigmaPointsBelow);
+        cosTheta2Var = dot(sigmaWeights, Sq(sigmaPointsBelow - cosTheta2));
+    }
+
+    // First interface
+    real3 R12p, R12s;
+    F_FresnelConductor(eta2/eta1, 0, cosTheta1, R12p, R12s);
+    real3 T12p = 1.0 - R12p;
+    real3 T12s = 1.0 - R12s;
+
+    real phi21p = PI;
+    real phi21s = PI;
+    if (use_phase_shift)
+    {
+        phi21p *= step(eta1*cosTheta2, eta2*cosTheta1);
+        phi21s *= step(eta2*cosTheta2, eta1*cosTheta1);
+    }
+
+
+    // Second interface
+    real3 R23p, R23s;
+    F_FresnelConductor(eta3/eta2, kappa3/eta2, cosTheta2, R23p, R23s);
+
+    real3 phi23p = float3(0,0,0);
+    real3 phi23s = float3(0,0,0);
+    if (use_phase_shift)
+    {
+        FresnelConductorPhase(cosTheta2, eta2, eta3, kappa3, phi23p, phi23s);
+    }
+
+
+    // Phase shift
+    real OPD = 2*eta2 * Dinc * cosTheta2;
+    real OPDSigma = 2*eta2 * Dinc * sqrt(cosTheta2Var); // cf. Kalman filter
+    real3 phi2p = phi21p + phi23p;
+    real3 phi2s = phi21s + phi23s;
+
+    // Compound terms
+    real3 R123p = R12p * R23p;
+    real3 r123p = sqrt(R123p);
+    real3 Rstarp = Sq(T12p) * R23p / (real3(1.0, 1.0, 1.0) - R123p);
+    real3 R123s = R12s * R23s;
+    real3 r123s = sqrt(R123s);
+    real3 Rstars = Sq(T12s) * R23s / (real3(1.0, 1.0, 1.0) - R123s);
+
+    // Reflectance term for m = 0 (DC term amplitude)
+    real3 C0p = R12p + Rstarp;
+    real3 C0s = R12s + Rstars;
+    // real3 I = C0p + C0s;
+    real3 Ip = C0p;
+    real3 Is = C0s;
+
+    // Reflectance term for m > 0 (pairs of diracs)
+    real3 Cmp = Rstarp - T12p;
+    real3 Cms = Rstars - T12s;
+    for (int m = 1; m <= 2; ++m)
+    {
+        Cmp *= r123p;
+        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi2p, m * OPDSigma);
+        Ip += Cmp * Smp;
+
+        Cms *= r123s;
+        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi2s, m * OPDSigma);
+        Is += Cms * Sms;
+    }
+
+    // This helps with black pixels:
+    real3 I = max(Is, float3(0,0,0)) + max(Ip, float3(0,0,0));
+
+    return 0.5 * I;
 }
 
 //-----------------------------------------------------------------------------

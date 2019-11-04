@@ -75,6 +75,7 @@ MonoBehaviour:
       type: 3}
     GGXConvolvePS: {fileID: 4800000, guid: 123ed592ad5c2494b8aed301fd609e7b, type: 3}
     charlieConvolvePS: {fileID: 4800000, guid: 5685fd17e71045e4ca9fefca38a7c177, type: 3}
+    computeWSdotLPS: {fileID: 4800000, guid: b24cd9592320523e89ee67a7840310e1, type: 3}
     opaqueAtmosphericScatteringPS: {fileID: 4800000, guid: 32f724728cf19904291226f239ec16f0,
       type: 3}
     hdriSkyPS: {fileID: 4800000, guid: 9bd32a6ece529fd4f9408b8d7e00c10d, type: 3}
@@ -99,6 +100,10 @@ MonoBehaviour:
     preIntegratedFGD_CookTorrancePS: {fileID: 4800000, guid: a6402c19b020b4a4fb7073aaa2e26aba,
       type: 3}
     defaultRendererCustomPass: {fileID: 4800000, guid: 18cb4caffc5f88c44bf4d8f1a7841e73,
+      type: 3}
+    preIntegratedVdotH_GGXPS: {fileID: 4800000, guid: 94dcf2f55f36f3b5fa119e0b4d059259,
+      type: 3}
+    preIntegratedVdotL_GGXPS: {fileID: 4800000, guid: 5b29e825c0d9f2b8fab1e959b6185389,
       type: 3}
     encodeBC6HCS: {fileID: 7200000, guid: aa922d239de60304f964e24488559eeb, type: 3}
     cubeToPanoPS: {fileID: 4800000, guid: 595434cc3b6405246b6cd3086d0b6f7d, type: 3}
