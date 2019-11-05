@@ -223,10 +223,6 @@ namespace UnityEngine.Rendering.HighDefinition
 
             float mipCount = Mathf.Clamp(Mathf.Log((float)skyReflection.width, 2.0f) + 1, 0.0f, 6.0f);
             cmd.SetGlobalFloat(HDShaderIDs._SkyTextureMipCount, mipCount);
-
-            cmd.SetGlobalTexture(HDShaderIDs._PreIntegratedWSdotL_X1_GGX, m_SkyRenderingContext.filteredWSdotL1Texture);
-            cmd.SetGlobalTexture(HDShaderIDs._PreIntegratedWSdotL_X2_GGX, m_SkyRenderingContext.filteredWSdotL2Texture);
-            cmd.SetGlobalTexture(HDShaderIDs._PreIntegratedWSdotL_XY_GGX, m_SkyRenderingContext.filteredWSdotL3Texture);
         }
 
         public void SetGlobalSkyData(CommandBuffer cmd)
