@@ -291,7 +291,7 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float3 lightDirMean;
         float3x3 lightDirCovar;
         GetPreIntegratedLightDirFromSky(preLightData.iblR, preLightData.iblPerceptualRoughness, lightDirMean, lightDirCovar);
-        float VdotL_mean = max(0, min(1, dot(V, lightDirMean)));
+        float VdotL_mean = max(-1, min(1, dot(V, lightDirMean)));
         float VdotL_var = max(0, dot(V, mul(lightDirCovar, V)));
         VdotL_var = _IridescenceUseVarVdotH ? VdotL_var : 0;
 
