@@ -300,8 +300,8 @@ Shader "HDRP/Iridescence"
         // Iridescence shader always renders in forward
         Pass
         {
-            Name "Forward"
-            Tags { "LightMode" = "Forward" }
+            Name "ForwardOnly"
+            Tags { "LightMode" = "ForwardOnly" }
 
             Stencil
             {
