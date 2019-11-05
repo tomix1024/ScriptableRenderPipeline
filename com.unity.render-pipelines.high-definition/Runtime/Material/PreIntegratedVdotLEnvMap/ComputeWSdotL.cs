@@ -1,7 +1,7 @@
-using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.Rendering.HDPipeline
+namespace UnityEngine.Rendering.HighDefinition
 {
     public class ComputeWSdotL
     {

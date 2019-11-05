@@ -14,6 +14,8 @@ CBUFFER_START(UnityPerMaterial)
 
 // shared constant between lit and layered lit
 float _AlphaCutoff;
+float _UseShadowThreshold;
+float _AlphaCutoffShadow;
 float _AlphaCutoffPrepass;
 float _AlphaCutoffPostpass;
 float4 _DoubleSidedConstants;

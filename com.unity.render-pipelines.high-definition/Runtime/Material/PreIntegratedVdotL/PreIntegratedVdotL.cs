@@ -1,7 +1,7 @@
 using System;
-using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
-namespace UnityEngine.Experimental.Rendering.HDPipeline
+namespace UnityEngine.Rendering.HighDefinition
 {
     public partial class PreIntegratedVdotL
     {
@@ -34,16 +34,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
         }
 
-        public void Build()
+        public void Build(HDRenderPipelineAsset hdAsset, RenderPipelineResources defaultResources)
         {
             Debug.Assert(m_refCounting >= 0);
 
             if (m_refCounting == 0)
             {
-                var hdrp = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
                 int res  = (int)VdotLTexture.Resolution;
 
-                m_PreIntegratedVdotLMaterial = CoreUtils.CreateEngineMaterial(hdrp.renderPipelineResources.shaders.preIntegratedVdotL_GGXPS);
+                m_PreIntegratedVdotLMaterial = CoreUtils.CreateEngineMaterial(hdAsset.renderPipelineResources.shaders.preIntegratedVdotL_GGXPS);
                 m_PreIntegratedVdotL = new RenderTexture(res, res, 0, RenderTextureFormat.ARGBFloat/*ARGB2101010*/, RenderTextureReadWrite.Linear);
                 m_PreIntegratedVdotL.hideFlags = HideFlags.HideAndDontSave;
                 m_PreIntegratedVdotL.filterMode = FilterMode.Bilinear;

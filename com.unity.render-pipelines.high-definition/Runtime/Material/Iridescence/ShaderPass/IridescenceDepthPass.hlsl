@@ -4,8 +4,8 @@
 
 // Attributes
 #define REQUIRE_TANGENT_TO_WORLD defined(_PIXEL_DISPLACEMENT)
-#define REQUIRE_NORMAL defined(TESSELLATION_ON) || REQUIRE_TANGENT_TO_WORLD || defined(_VERTEX_WIND) || defined(_VERTEX_DISPLACEMENT)
-#define REQUIRE_VERTEX_COLOR (defined(_VERTEX_DISPLACEMENT) || defined(_TESSELLATION_DISPLACEMENT) || (defined(LAYERED_LIT_SHADER) && (defined(_LAYER_MASK_VERTEX_COLOR_MUL) || defined(_LAYER_MASK_VERTEX_COLOR_ADD))) || defined(_VERTEX_WIND))
+#define REQUIRE_NORMAL defined(TESSELLATION_ON) || REQUIRE_TANGENT_TO_WORLD || defined(_VERTEX_DISPLACEMENT)
+#define REQUIRE_VERTEX_COLOR (defined(_VERTEX_DISPLACEMENT) || defined(_TESSELLATION_DISPLACEMENT) || (defined(LAYERED_LIT_SHADER) && (defined(_LAYER_MASK_VERTEX_COLOR_MUL) || defined(_LAYER_MASK_VERTEX_COLOR_ADD))))
 
 // This first set of define allow to say which attributes will be use by the mesh in the vertex and domain shader (for tesselation)
 
@@ -53,6 +53,8 @@
     #ifdef ATTRIBUTES_NEED_COLOR
     #define VARYINGS_NEED_COLOR
     #endif
+#elif defined(LOD_FADE_CROSSFADE)
+    #define VARYINGS_NEED_POSITION_WS // Required to get view vector use in cross fade effect
 #endif
 
 // This include will define the various Attributes/Varyings structure

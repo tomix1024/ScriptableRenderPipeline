@@ -6,7 +6,7 @@
 #define IRIDESCENCE_CS_HLSL
 
 //
-// UnityEngine.Experimental.Rendering.HDPipeline.Iridescence+SurfaceData:  static fields
+// UnityEngine.Rendering.HighDefinition.Iridescence+SurfaceData:  static fields
 //
 #define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_AMBIENT_OCCLUSION           (1000)
 #define DEBUGVIEW_IRIDESCENCE_SURFACEDATA_SPECULAR_OCCLUSION          (1001)

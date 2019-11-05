@@ -1,41 +1,46 @@
-using System;
-using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition.Attributes;
+using UnityEngine.Experimental.Rendering;
 
-namespace UnityEngine.Experimental.Rendering.HDPipeline
+namespace UnityEngine.Rendering.HighDefinition
 {
-    public partial class Iridescence : RenderPipelineMaterial
+    partial class Iridescence : RenderPipelineMaterial
     {
         //-----------------------------------------------------------------------------
         // SurfaceData
         //-----------------------------------------------------------------------------
 
         // Main structure that store the user data (i.e user input of master node in material graph)
-        [GenerateHLSL(PackingRules.Exact, false, true, 1000)]
+        [GenerateHLSL(PackingRules.Exact, false, false, true, 1000)]
         public struct SurfaceData
         {
+            [MaterialSharedPropertyMapping(MaterialSharedProperty.AmbientOcclusion)]
+            [SurfaceDataAttributes("Ambient Occlusion", precision = FieldPrecision.Real)]
             public float ambientOcclusion; // Caution: This is accessible only if light layer is enabled, otherwise it is 1
+            [SurfaceDataAttributes("Specular Occlusion", precision = FieldPrecision.Real)]
             public float specularOcclusion;
 
+            [MaterialSharedPropertyMapping(MaterialSharedProperty.Normal)]
             [SurfaceDataAttributes(new string[] {"Normal", "Normal View Space"}, true)]
             public Vector3 normalWS;
 
-            [SurfaceDataAttributes("Smoothness")]
+            [MaterialSharedPropertyMapping(MaterialSharedProperty.Smoothness)]
+            [SurfaceDataAttributes("Smoothness", precision = FieldPrecision.Real)]
             public float perceptualSmoothness;
 
-            [SurfaceDataAttributes("Fresnel0")]
+            [SurfaceDataAttributes("Fresnel0", precision = FieldPrecision.Real)]
             public Vector3 fresnel0;
 
             // Iridescence
-            [SurfaceDataAttributes("Iridescence Layer Thickness")]
+            [SurfaceDataAttributes("Iridescence Layer Thickness", precision = FieldPrecision.Real)]
             public float iridescenceThickness;
 
-            [SurfaceDataAttributes("Iridescence Layer Eta")]
+            [SurfaceDataAttributes("Iridescence Layer Eta", precision = FieldPrecision.Real)]
             public float iridescenceEta2;
 
-            [SurfaceDataAttributes("Iridescence Base Eta")]
+            [SurfaceDataAttributes("Iridescence Base Eta", precision = FieldPrecision.Real)]
             public float iridescenceEta3;
 
-            [SurfaceDataAttributes("Iridescence Base Kappa")]
+            [SurfaceDataAttributes("Iridescence Base Kappa", precision = FieldPrecision.Real)]
             public float iridescenceKappa3;
         };
 
@@ -43,26 +48,35 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         // BSDFData
         //-----------------------------------------------------------------------------
 
-        [GenerateHLSL(PackingRules.Exact, false, true, 1050)]
+        [GenerateHLSL(PackingRules.Exact, false, false, true, 1050)]
         public struct BSDFData
         {
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float ambientOcclusion; // Caution: This is accessible only if light layer is enabled, otherwise it is 1
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float specularOcclusion;
 
-            [SurfaceDataAttributes("", false, true)]
+            [SurfaceDataAttributes("", false, true, FieldPrecision.Real)]
             public Vector3 diffuseColor;
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public Vector3 fresnel0;
 
             [SurfaceDataAttributes(new string[] { "Normal WS", "Normal View Space" }, true)]
             public Vector3 normalWS;
 
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float perceptualRoughness;
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float roughness;
 
             // Iridescence
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float iridescenceThickness;
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float iridescenceEta2;
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float iridescenceEta3;
+            [SurfaceDataAttributes(precision = FieldPrecision.Real)]
             public float iridescenceKappa3;
         };
 
@@ -78,7 +92,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public Iridescence() {}
 
-        public override void Build(HDRenderPipelineAsset hdAsset)
+        public override void Build(HDRenderPipelineAsset hdAsset, RenderPipelineResources defaultResources)
         {
             LoadSpectralSensitivity.instance.Build();
             PreIntegratedFGD.instance.Build(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
@@ -104,13 +118,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             PreIntegratedVdotL.instance.RenderInit(cmd);
         }
 
-        public override void Bind()
+        public override void Bind(CommandBuffer cmd)
         {
-            LoadSpectralSensitivity.instance.Bind();
-            PreIntegratedFGD.instance.Bind(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
-            PreIntegratedVdotH.instance.Bind();
-            PreIntegratedVdotL.instance.Bind();
-            LTCAreaLight.instance.Bind();
+            LoadSpectralSensitivity.instance.Bind(cmd);
+            PreIntegratedFGD.instance.Bind(cmd, PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
+            PreIntegratedVdotH.instance.Bind(cmd);
+            PreIntegratedVdotL.instance.Bind(cmd);
+            LTCAreaLight.instance.Bind(cmd);
         }
     }
 }

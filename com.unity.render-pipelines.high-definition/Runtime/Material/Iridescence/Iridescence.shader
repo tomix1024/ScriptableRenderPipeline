@@ -1,4 +1,4 @@
-Shader "HDRenderPipeline/Iridescence"
+Shader "HDRP/Iridescence"
 {
     Properties
     {
@@ -97,12 +97,6 @@ Shader "HDRenderPipeline/Iridescence"
 
     #pragma shader_feature LIT_USE_GGX_ENERGY_COMPENSATION
 
-    // Keyword for transparent
-    #pragma shader_feature _SURFACE_TYPE_TRANSPARENT
-    #pragma shader_feature _ _BLENDMODE_ALPHA _BLENDMODE_ADD _BLENDMODE_PRE_MULTIPLY
-    #pragma shader_feature _BLENDMODE_PRESERVE_SPECULAR_LIGHTING // easily handled in material.hlsl, so adding this already.
-    #pragma shader_feature _ENABLE_FOG_ON_TRANSPARENT
-
     //enable GPU instancing support
     #pragma multi_compile_instancing
 
@@ -127,13 +121,16 @@ Shader "HDRenderPipeline/Iridescence"
     // Define
     //-------------------------------------------------------------------------------------
 
-    #define UNITY_MATERIAL_IRIDESCENCE // Need to be define before including Material.hlsl
+    #if defined(_TRANSPARENT_WRITES_MOTION_VEC) && defined(_SURFACE_TYPE_TRANSPARENT)
+    #define _WRITE_TRANSPARENT_MOTION_VECTOR
+    #endif
 
     //-------------------------------------------------------------------------------------
     // Include
     //-------------------------------------------------------------------------------------
 
     #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
     #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/FragInputs.hlsl"
     #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPass.cs.hlsl"
 
@@ -142,10 +139,6 @@ Shader "HDRenderPipeline/Iridescence"
     //-------------------------------------------------------------------------------------
 
     #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/IridescenceProperties.hlsl"
-
-    // All our shaders use same name for entry point
-    #pragma vertex Vert
-    #pragma fragment Frag
 
     ENDHLSL
 
@@ -156,7 +149,7 @@ Shader "HDRenderPipeline/Iridescence"
 
         Pass
         {
-            Name "SceneSelectionPass" // Name is not used
+            Name "SceneSelectionPass"
             Tags { "LightMode" = "SceneSelectionPass" }
 
             Cull Off
@@ -168,65 +161,16 @@ Shader "HDRenderPipeline/Iridescence"
             // We reuse depth prepass for the scene selection, allow to handle alpha correctly as well as tessellation and vertex animation
             #define SHADERPASS SHADERPASS_DEPTH_ONLY
             #define SCENESELECTIONPASS // This will drive the output of the scene selection shader
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-            #include "ShaderPass/IridescenceDepthPass.hlsl"
-            #include "IridescenceData.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/Iridescence.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/ShaderPass/IridescenceDepthPass.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/IridescenceData.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassDepthOnly.hlsl"
 
-            ENDHLSL
-        }
+            #pragma vertex Vert
+            #pragma fragment Frag
 
-        Pass
-        {
-            Name "Depth prepass"
-            Tags{ "LightMode" = "DepthForwardOnly" }
-
-            Cull[_CullMode]
-
-            ZWrite On
-
-            HLSLPROGRAM
-
-            #define WRITE_NORMAL_BUFFER
-            #define SHADERPASS SHADERPASS_DEPTH_ONLY
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-            #include "ShaderPass/IridescenceDepthPass.hlsl"
-            #include "IridescenceData.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassDepthOnly.hlsl"
-
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "Motion Vectors"
-            Tags{ "LightMode" = "MotionVectors" } // Caution, this need to be call like this to setup the correct parameters by C++ (legacy Unity)
-
-            // If velocity pass (motion vectors) is enabled we tag the stencil so it don't perform CameraMotionVelocity
-            Stencil
-            {
-                WriteMask [_StencilWriteMaskMV]
-                Ref [_StencilRefMV]
-                Comp Always
-                Pass Replace
-            }
-
-            Cull[_CullMode]
-
-            ZWrite On
-
-            HLSLPROGRAM
-            #define WRITE_NORMAL_BUFFER
-            #pragma multi_compile _ WRITE_MSAA_DEPTH
-
-            #define SHADERPASS SHADERPASS_VELOCITY
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-            #include "ShaderPass/IridescenceSharePass.hlsl"
-            #include "IridescenceData.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassVelocity.hlsl"
+            #pragma editor_sync_compilation
 
             ENDHLSL
         }
@@ -236,7 +180,7 @@ Shader "HDRenderPipeline/Iridescence"
         Pass
         {
             Name "META"
-            Tags{ "LightMode" = "Meta" }
+            Tags{ "LightMode" = "META" }
 
             Cull Off
 
@@ -247,11 +191,14 @@ Shader "HDRenderPipeline/Iridescence"
             // both direct and indirect lighting) will hand up in the "regular" lightmap->LIGHTMAP_ON.
 
             #define SHADERPASS SHADERPASS_LIGHT_TRANSPORT
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-            #include "ShaderPass/IridescenceSharePass.hlsl"
-            #include "IridescenceData.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/Iridescence.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/ShaderPass/IridescenceSharePass.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/IridescenceData.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassLightTransport.hlsl"
+
+            #pragma vertex Vert
+            #pragma fragment Frag
 
             ENDHLSL
         }
@@ -272,22 +219,89 @@ Shader "HDRenderPipeline/Iridescence"
             HLSLPROGRAM
 
             #define SHADERPASS SHADERPASS_SHADOWS
-            #define USE_LEGACY_UNITY_MATRIX_VARIABLES
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-
-            #include "ShaderPass/IridescenceDepthPass.hlsl"
-            #include "IridescenceData.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/Iridescence.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/ShaderPass/IridescenceDepthPass.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/IridescenceData.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassDepthOnly.hlsl"
+
+            #pragma vertex Vert
+            #pragma fragment Frag
 
             ENDHLSL
         }
 
-        // Iridescence shader always render in forward
         Pass
         {
-            Name "Forward" // Name is not used
-            Tags { "LightMode" = "ForwardOnly" }
+            Name "MotionVectors"
+            Tags{ "LightMode" = "MotionVectors" } // Caution, this need to be call like this to setup the correct parameters by C++ (legacy Unity)
+
+            // If velocity pass (motion vectors) is enabled we tag the stencil so it don't perform CameraMotionVelocity
+            Stencil
+            {
+                WriteMask [_StencilWriteMaskMV]
+                Ref [_StencilRefMV]
+                Comp Always
+                Pass Replace
+            }
+
+            Cull[_CullMode]
+
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma multi_compile _ WRITE_NORMAL_BUFFER
+            #pragma multi_compile _ WRITE_MSAA_DEPTH
+
+            #define SHADERPASS SHADERPASS_MOTION_VECTORS
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/Iridescence.hlsl"
+            #ifdef WRITE_NORMAL_BUFFER // If enabled we need all regular interpolator
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/ShaderPass/IridescenceSharePass.hlsl"
+            #else
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/ShaderPass/IridescenceMotionVectorPass.hlsl"
+            #endif
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/IridescenceData.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassVelocity.hlsl"
+
+            #pragma vertex Vert
+            #pragma fragment Frag
+
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthForwardOnly"
+            Tags{ "LightMode" = "DepthForwardOnly" }
+
+            Cull[_CullMode]
+
+            ZWrite On
+
+            HLSLPROGRAM
+
+            #define WRITE_NORMAL_BUFFER
+            #pragma multi_compile _ WRITE_MSAA_DEPTH
+
+            #define SHADERPASS SHADERPASS_DEPTH_ONLY
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/Iridescence.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/ShaderPass/IridescenceDepthPass.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/IridescenceData.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassDepthOnly.hlsl"
+
+            #pragma vertex Vert
+            #pragma fragment Frag
+
+            ENDHLSL
+        }
+
+        // Iridescence shader always renders in forward
+        Pass
+        {
+            Name "Forward"
+            Tags { "LightMode" = "Forward" }
 
             Stencil
             {
@@ -306,38 +320,48 @@ Shader "HDRenderPipeline/Iridescence"
             HLSLPROGRAM
 
             #pragma multi_compile _ DEBUG_DISPLAY
-            //NEWLITTODO
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ DIRLIGHTMAP_COMBINED
             #pragma multi_compile _ DYNAMICLIGHTMAP_ON
             #pragma multi_compile _ SHADOWS_SHADOWMASK
-            // Setup DECALS_OFF so the shader stripper can remove variants
-            // #pragma multi_compile DECALS_OFF DECALS_3RT DECALS_4RT
 
             // Supported shadow modes per light type
-            #pragma multi_compile PUNCTUAL_SHADOW_LOW PUNCTUAL_SHADOW_MEDIUM PUNCTUAL_SHADOW_HIGH
-            #pragma multi_compile DIRECTIONAL_SHADOW_LOW DIRECTIONAL_SHADOW_MEDIUM DIRECTIONAL_SHADOW_HIGH
+            #pragma multi_compile SHADOW_LOW SHADOW_MEDIUM SHADOW_HIGH
 
-            // #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Lighting/Forward.hlsl" : nothing left in there.
-            //#pragma multi_compile LIGHTLOOP_SINGLE_PASS LIGHTLOOP_TILE_PASS
-            #define LIGHTLOOP_TILE_PASS
             #pragma multi_compile USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
 
             #define SHADERPASS SHADERPASS_FORWARD
             // In case of opaque we don't want to perform the alpha test, it is done in depth prepass and we use depth equal for ztest (setup from UI)
-            #ifndef _SURFACE_TYPE_TRANSPARENT
+            // Don't do it with debug display mode as it is possible there is no depth prepass in this case
+            #if !defined(_SURFACE_TYPE_TRANSPARENT) && !defined(DEBUG_DISPLAY)
                 #define SHADERPASS_FORWARD_BYPASS_ALPHA_TEST
             #endif
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-            #ifdef DEBUG_DISPLAY
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
-            #endif
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
-            //...this will include #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl" but also LightLoop which the forward pass directly uses.
 
-            #include "ShaderPass/IridescenceSharePass.hlsl"
-            #include "IridescenceData.hlsl"
+        #ifdef DEBUG_DISPLAY
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
+        #endif
+
+            // The light loop (or lighting architecture) is in charge to:
+            // - Define light list
+            // - Define the light loop
+            // - Setup the constant/data
+            // - Do the reflection hierarchy
+            // - Provide sampling function for shadowmap, ies, cookie and reflection (depends on the specific use with the light loops like index array or atlas or single and texture format (cubemap/latlong))
+
+            #define HAS_LIGHTLOOP
+
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoopDef.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/Iridescence.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoop.hlsl"
+
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/ShaderPass/IridescenceSharePass.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/IridescenceData.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassForward.hlsl"
+
+            #pragma vertex Vert
+            #pragma fragment Frag
 
             ENDHLSL
         }
