@@ -3,7 +3,7 @@ using UnityEngine.Rendering;
 using System.IO;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.Rendering.HDPipeline
+namespace UnityEngine.Rendering.HighDefinition
 {
     public class LoadSpectralSensitivity
     {
@@ -121,11 +121,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             Debug.Assert(m_refCounting >= 0);
         }
 
-        public void Bind()
+        public void Bind(CommandBuffer cmd)
         {
             // TODO HDShaderIDs!
-            Shader.SetGlobalTexture("_IridescenceSensitivityMap", m_SpectralSensitivity);
-            Shader.SetGlobalVector("_IridescenceSensitivityMap_ST", m_SpectralSensitivity_ST);
+            cmd.SetGlobalTexture("_IridescenceSensitivityMap", m_SpectralSensitivity);
+            cmd.SetGlobalVector("_IridescenceSensitivityMap_ST", m_SpectralSensitivity_ST);
         }
     }
 }

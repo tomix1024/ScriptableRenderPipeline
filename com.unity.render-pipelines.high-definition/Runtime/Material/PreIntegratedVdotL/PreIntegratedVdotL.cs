@@ -34,15 +34,16 @@ namespace UnityEngine.Rendering.HighDefinition
         {
         }
 
-        public void Build(HDRenderPipelineAsset hdAsset, RenderPipelineResources defaultResources)
+        public void Build()
         {
             Debug.Assert(m_refCounting >= 0);
 
             if (m_refCounting == 0)
             {
+                var hdrp = HDRenderPipeline.defaultAsset;
                 int res  = (int)VdotLTexture.Resolution;
 
-                m_PreIntegratedVdotLMaterial = CoreUtils.CreateEngineMaterial(hdAsset.renderPipelineResources.shaders.preIntegratedVdotL_GGXPS);
+                m_PreIntegratedVdotLMaterial = CoreUtils.CreateEngineMaterial(hdrp.renderPipelineResources.shaders.preIntegratedVdotL_GGXPS);
                 m_PreIntegratedVdotL = new RenderTexture(res, res, 0, RenderTextureFormat.ARGBFloat/*ARGB2101010*/, RenderTextureReadWrite.Linear);
                 m_PreIntegratedVdotL.hideFlags = HideFlags.HideAndDontSave;
                 m_PreIntegratedVdotL.filterMode = FilterMode.Bilinear;
@@ -86,9 +87,9 @@ namespace UnityEngine.Rendering.HighDefinition
             Debug.Assert(m_refCounting >= 0);
         }
 
-        public void Bind()
+        public void Bind(CommandBuffer cmd)
         {
-            Shader.SetGlobalTexture(HDShaderIDs._PreIntegratedVdotL_GGX, m_PreIntegratedVdotL);
+            cmd.SetGlobalTexture(HDShaderIDs._PreIntegratedVdotL_GGX, m_PreIntegratedVdotL);
         }
     }
 }

@@ -6,12 +6,18 @@
 
 void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, out SurfaceData surfaceData, out BuiltinData builtinData)
 {
-    ApplyDoubleSidedFlipOrMirror(input); // Apply double sided flip on the vertex normal
+#ifdef _DOUBLESIDED_ON
+    float3 doubleSidedConstants = _DoubleSidedConstants.xyz;
+#else
+    float3 doubleSidedConstants = float3(1.0, 1.0, 1.0);
+#endif
+
+    ApplyDoubleSidedFlipOrMirror(input, doubleSidedConstants); // Apply double sided flip on the vertex normal
 
     // Apply offset and tiling
     float2 uvNormal = input.texCoord0.xy * _NormalMap_ST.xy + _NormalMap_ST.zw;
 
-    surfaceData.normalWS = input.worldToTangent[2].xyz;
+    surfaceData.normalWS = input.tangentToWorld[2].xyz;
 #ifdef _NORMALMAP
     float3 normalTS = UnpackNormalmapRGorAG(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uvNormal), _NormalScale);
     GetNormalWS(input, normalTS, surfaceData.normalWS);
@@ -49,6 +55,6 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     // -------------------------------------------------------------
 
     float alpha = 1;
-    InitBuiltinData(alpha, surfaceData.normalWS, surfaceData.normalWS, input.positionRWS, input.texCoord1, input.texCoord2, builtinData);
+    InitBuiltinData(posInput, alpha, surfaceData.normalWS, surfaceData.normalWS, input.texCoord1, input.texCoord2, builtinData);
     PostInitBuiltinData(V, posInput, surfaceData, builtinData);
 }

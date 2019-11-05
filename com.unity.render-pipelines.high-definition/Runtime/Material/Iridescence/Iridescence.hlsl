@@ -4,6 +4,7 @@
 
 // SurfaceData is define in Iridescence.cs which generate Iridescence.cs.hlsl
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/Iridescence.cs.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/SubsurfaceScattering/SubsurfaceScattering.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/NormalBuffer.hlsl"
 
 //-----------------------------------------------------------------------------
@@ -42,7 +43,7 @@
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedVdotH/PreIntegratedVdotH.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedVdotL/PreIntegratedVdotL.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedVdotLEnvMap/PreIntegratedVdotLEnvMap.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedLightDir/PreIntegratedLightDir.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedIblR/PreIntegratedIblR.hlsl"
 
 //-----------------------------------------------------------------------------
@@ -98,12 +99,6 @@ void ApplyDebugToSurfaceData(float3x3 tangentToWorld, inout SurfaceData surfaceD
     bool overrideAlbedo = _DebugLightingAlbedo.x != 0.0;
     bool overrideSmoothness = _DebugLightingSmoothness.x != 0.0;
     bool overrideNormal = _DebugLightingNormal.x != 0.0;
-
-    if (overrideAlbedo)
-    {
-        float3 overrideAlbedoValue = _DebugLightingAlbedo.yzw;
-        surfaceData.baseColor = overrideAlbedoValue;
-    }
 
     if (overrideSmoothness)
     {
@@ -216,7 +211,7 @@ void GetBSDFDataDebug(uint paramId, BSDFData bsdfData, inout float3 result, inou
 
 void GetPBRValidatorDebug(SurfaceData surfaceData, inout float3 result)
 {
-    result = surfaceData.baseColor;
+    result = surfaceData.fresnel0; // Whatever
 }
 
 //-----------------------------------------------------------------------------
@@ -293,9 +288,11 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         float VdotH_mean = VdotH_moments.y;
         float VdotH_var = max(0, VdotH_moments.z - VdotH_mean * VdotH_mean);
 
-        float VdotL_mean;
-        float VdotL_var;
-        GetPreIntegratedVdotLGGX(V, preLightData.iblR, preLightData.iblPerceptualRoughness, VdotL_mean, VdotL_var);
+        float3 lightDirMean;
+        float3x3 lightDirCovar;
+        GetPreIntegratedLightDirFromSky(preLightData.iblR, preLightData.iblPerceptualRoughness, lightDirMean, lightDirCovar);
+        float VdotL_mean = max(0, min(1, dot(V, lightDirMean)));
+        float VdotL_var = max(0, dot(V, mul(lightDirCovar, V)));
         VdotL_var = _IridescenceUseVarVdotH ? VdotL_var : 0;
 
         if (_IridescenceUseVdotL)
@@ -447,8 +444,8 @@ CBSDF EvaluateBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfD
     float clampedNdotL = saturate(NdotL);
     float flippedNdotL = ComputeWrappedDiffuseLighting(-NdotL, TRANSMISSION_WRAP_LIGHT);
 
-    float LdotV, NdotH, LdotH, NdotV, invLenLV;
-    GetBSDFAngle(V, L, NdotL, preLightData.NdotV, LdotV, NdotH, LdotH, NdotV, invLenLV);
+    float LdotV, NdotH, LdotH, invLenLV;
+    GetBSDFAngle(V, L, NdotL, NdotV, LdotV, NdotH, LdotH, invLenLV);
 
     float3 F = F_Schlick(bsdfData.fresnel0, LdotH);
     // Remark: Fresnel must be use with LdotH angle. But Fresnel for iridescence is expensive to compute at each light.
