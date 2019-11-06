@@ -45,6 +45,7 @@
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedVdotL/PreIntegratedVdotL.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedLightDir/PreIntegratedLightDir.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedIblR/PreIntegratedIblR.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/IridescenceBSDF.hlsl"
 
 //-----------------------------------------------------------------------------
 // Definition
