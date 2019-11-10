@@ -82,6 +82,7 @@ Shader "HDRenderPipeline/Iridescence2DRect"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedVdotH/PreIntegratedVdotH.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedVdotL/PreIntegratedVdotL.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedIblR/PreIntegratedIblR.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Iridescence/IridescenceBSDF.hlsl"
 
 
             // Uniform values here!
