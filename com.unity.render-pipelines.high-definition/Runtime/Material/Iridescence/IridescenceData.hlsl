@@ -20,7 +20,7 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     surfaceData.normalWS = input.tangentToWorld[2].xyz;
 #ifdef _NORMALMAP
     float3 normalTS = UnpackNormalmapRGorAG(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uvNormal), _NormalScale);
-    GetNormalWS(input, normalTS, surfaceData.normalWS);
+    GetNormalWS(input, normalTS, surfaceData.normalWS, doubleSidedConstants);
 #endif
 
     // No occlusion...
