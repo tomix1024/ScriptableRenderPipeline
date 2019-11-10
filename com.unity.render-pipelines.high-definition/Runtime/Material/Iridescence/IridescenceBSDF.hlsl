@@ -124,11 +124,9 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     }
 
     // This helps with black pixels:
-    //max(Is, float3(0,0,0)) + max(Ip, float3(0,0,0));
-    real3 I = 0.5*(Is + Ip);
+    real3 I = max(Is, float3(0,0,0)) + max(Ip, float3(0,0,0));
 
-    // TODO why do some directions return black values here!?
-    return I;
+    return 0.5 * I;
 }
 
 // Evaluate the reflectance for a thin-film layer on top of a conducting medum.
