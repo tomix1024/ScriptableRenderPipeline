@@ -21,6 +21,9 @@ Shader "HDRenderPipeline/Iridescence2DRect"
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048)]_IridescenceDisplayReferenceIBL2048("2048 Sample Ref. IBL", Float) = 0
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K)]_IridescenceDisplayReferenceIBL16k("16k Sample Ref. IBL", Float) = 0
 
+        [Toggle(IRIDESCENCE_VARIABLE_TERMS)]_IridescenceVariableTerms("Variable Iridescence Terms", Float) = 0
+        _IridescenceTerms("Iridescence Terms", Int) = 2
+
         [Enum(Reference,0, OPD,1, VdotH,2, VdotL,3)]_ReferenceType("Reference Type", Float) = 0.0
 
         // BlendMode
@@ -71,6 +74,7 @@ Shader "HDRenderPipeline/Iridescence2DRect"
             #define IRIDESCENCE_DISPLAY_REFERENCE_IBL 16*1024
             #endif
 
+            #pragma shader_feature _ IRIDESCENCE_VARIABLE_TERMS
 
             #define UNITY_MATERIAL_IRIDESCENCE // Need to be define before including Material.hlsl
 
@@ -99,7 +103,11 @@ Shader "HDRenderPipeline/Iridescence2DRect"
 
             float _ReferenceType;
 
-
+            #ifdef IRIDESCENCE_VARIABLE_TERMS
+                int _IridescenceTerms;
+            #else
+                #define _IridescenceTerms 2
+            #endif // IRIDESCENCE_VARIABLE_TERMS
 
             struct ShadingData
             {

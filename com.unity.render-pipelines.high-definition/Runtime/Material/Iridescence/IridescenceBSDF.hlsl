@@ -112,7 +112,7 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     // Reflectance term for m > 0 (pairs of diracs)
     real3 Cmp = Rstarp - T12p;
     real3 Cms = Rstars - T12s;
-    for (int m = 1; m <= 2; ++m)
+    for (int m = 1; m <= _IridescenceTerms /*2*/; ++m)
     {
         Cmp *= r123p;
         real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi2p, m * OPDSigma);
@@ -214,7 +214,7 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     // Reflectance term for m > 0 (pairs of diracs)
     real3 Cmp = Rstarp - T12p;
     real3 Cms = Rstars - T12s;
-    for (int m = 1; m <= 2; ++m)
+    for (int m = 1; m <= _IridescenceTerms /*2*/; ++m)
     {
         Cmp *= r123p;
         real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi2p, m * OPDSigma);

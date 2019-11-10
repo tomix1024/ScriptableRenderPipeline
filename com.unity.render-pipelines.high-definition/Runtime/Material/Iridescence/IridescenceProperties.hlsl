@@ -43,6 +43,11 @@ int _PassValue;
 
 
 
+#ifdef IRIDESCENCE_VARIABLE_TERMS
+    int _IridescenceTerms;
+#else
+    #define _IridescenceTerms 2
+#endif // IRIDESCENCE_VARIABLE_TERMS
 
 float _ReferenceUseCorrectOPD;
 float _ReferenceUseCorrectCoeffs;
