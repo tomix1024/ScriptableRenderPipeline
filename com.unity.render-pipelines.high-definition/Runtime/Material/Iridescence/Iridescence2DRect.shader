@@ -76,6 +76,12 @@ Shader "HDRenderPipeline/Iridescence2DRect"
 
             #pragma shader_feature _ IRIDESCENCE_VARIABLE_TERMS
 
+            #ifdef IRIDESCENCE_VARIABLE_TERMS
+                int _IridescenceTerms;
+            #else
+                #define _IridescenceTerms 2
+            #endif // IRIDESCENCE_VARIABLE_TERMS
+
             #define UNITY_MATERIAL_IRIDESCENCE // Need to be define before including Material.hlsl
 
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
@@ -102,12 +108,6 @@ Shader "HDRenderPipeline/Iridescence2DRect"
 
 
             float _ReferenceType;
-
-            #ifdef IRIDESCENCE_VARIABLE_TERMS
-                int _IridescenceTerms;
-            #else
-                #define _IridescenceTerms 2
-            #endif // IRIDESCENCE_VARIABLE_TERMS
 
             struct ShadingData
             {
