@@ -202,13 +202,13 @@ Shader "HDRenderPipeline/Iridescence2DRect"
                 }
 
                 float VdotH_mean = accVdotH1 / accVdotH0;
-                float VdotH_var = accVdotH2 / accVdotH0 - Sq(VdotH_mean);
+                float VdotH_var = max(0, accVdotH2 / accVdotH0 - Sq(VdotH_mean));
 
                 float VdotL_mean = accVdotL1 / accVdotL0;
-                float VdotL_var = accVdotL2 / accVdotL0 - Sq(VdotL_mean);
+                float VdotL_var = max(0, accVdotL2 / accVdotL0 - Sq(VdotL_mean));
 
                 float OPD_mean = accOPD1 / accOPD0;
-                float OPD_var = accOPD2 / accOPD0 - Sq(OPD_mean);
+                float OPD_var = max(0, accOPD2 / accOPD0 - Sq(OPD_mean));
 
 
                 // Compute color
