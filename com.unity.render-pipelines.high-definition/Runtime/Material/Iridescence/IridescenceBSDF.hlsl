@@ -23,6 +23,51 @@ real3 EvalSensitivityTable(real opd, real3 phi, real opdSigma = 0)
     return result;
 }
 
+real3 EvalSensitivityGauss(real opd, real3 phi, real opdSigma = 0)
+{
+    real opdVar = Sq(opdSigma);
+
+    // Use Gaussian fits, given by 3 parameters: val, pos and var
+    // xyzx (x twice!)
+    real4 pos = real4(1.6810, 1.7953, 2.2084, 2.2399);
+    real4 var = real4(4.3278e-03, 9.3046e-03, 6.6121e-03, 4.5282e-03) * 2;
+    real4 val = real4(5.4856e-7, 4.4201e-7, 5.2481e-7, 9.7470e-8) * sqrt(PI * var);
+
+    real4 atten = 1.0 + 4.0 * Sq(PI) * opdVar * var;
+
+    // TODO phi is for RGB, not XYZ!!
+
+    // phase from gaussian is negative, therefore add phi... cos(phase - phi)
+    real4 xyzx = val / sqrt(atten) * cos(2.0 * PI * pos * opd / atten + phi.xxxx) * exp(-2.0 * Sq(PI) * var * Sq(opd) / atten) * exp(-0.5 * Sq(pos) / var * (atten - 1) / atten);
+
+    real3 xyz = xyzx.xyz;
+    xyz.x += xyzx.w;
+    xyz /= 1.0685e-7;
+
+    real3x3 XYZ2SRGB = real3x3(
+         3.2406, -1.5372, -0.4986,
+        -0.9489,  1.8758,  0.0415,
+         0.0557, -0.2040,  1.0570
+    );
+    // normalize each color band individually, assume xyz is normalized!
+    // WHY DOES THE UNNORMALIZED MATRIX YIELD THE RESULT WE EXPECT FROM THE NORMALIZED ONE?!
+    //XYZ2SRGB[0] = normalize(XYZ2SRGB[0]);
+    //XYZ2SRGB[1] = normalize(XYZ2SRGB[1]);
+    //XYZ2SRGB[2] = normalize(XYZ2SRGB[2]);
+
+    real3 rgb = mul(XYZ2SRGB, xyz);
+    return rgb;
+}
+
+real3 EvalSensitivity(real opd, real3 phi, real opdSigma = 0)
+{
+    #ifdef IRIDESCENCE_USE_GAUSSIAN_FIT
+    return EvalSensitivityGauss(opd, phi, opdSigma);
+    #else
+    return EvalSensitivityTable(opd, phi, opdSigma);
+    #endif // IRIDESCENCE_USE_GAUSSIAN_FIT
+}
+
 void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, out real OPD, out real OPDSigma)
 {
     // layerThickness unit is micrometer for this equation here. 0.5 is 500nm.
@@ -115,11 +160,11 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     for (int m = 1; m <= _IridescenceTerms /*2*/; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi2p, m * OPDSigma);
+        real3 Smp = 2.0 * EvalSensitivity(m * OPD, m * phi2p, m * OPDSigma);
         Ip += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi2s, m * OPDSigma);
+        real3 Sms = 2.0 * EvalSensitivity(m * OPD, m * phi2s, m * OPDSigma);
         Is += Cms * Sms;
     }
 
@@ -215,11 +260,11 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     for (int m = 1; m <= _IridescenceTerms /*2*/; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivityTable(m * OPD, m * phi2p, m * OPDSigma);
+        real3 Smp = 2.0 * EvalSensitivity(m * OPD, m * phi2p, m * OPDSigma);
         Ip += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivityTable(m * OPD, m * phi2s, m * OPDSigma);
+        real3 Sms = 2.0 * EvalSensitivity(m * OPD, m * phi2s, m * OPDSigma);
         Is += Cms * Sms;
     }
 
