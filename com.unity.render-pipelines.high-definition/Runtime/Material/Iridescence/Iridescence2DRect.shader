@@ -16,6 +16,8 @@ Shader "HDRenderPipeline/Iridescence2DRect"
 
         [Toggle(IRIDESCENCE_USE_PHASE_SHIFT)]_IridescenceUsePhaseShift("Use Phase Shift", Float) = 1
 
+        [Toggle(IRIDESCENCE_USE_GAUSSIAN_FIT)]_IridescenceUseGaussianFit("Use Gaussian Fit", Float) = 0.0
+
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_16)]_IridescenceDisplayReferenceIBL16("16 Sample Ref. IBL", Float) = 0
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_256)]_IridescenceDisplayReferenceIBL256("256 Sample Ref. IBL", Float) = 0
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048)]_IridescenceDisplayReferenceIBL2048("2048 Sample Ref. IBL", Float) = 0
@@ -55,6 +57,7 @@ Shader "HDRenderPipeline/Iridescence2DRect"
             #pragma shader_feature _ IRIDESCENCE_USE_PREFILTERED_VDOTH
             #pragma shader_feature _ IRIDESCENCE_USE_PREFILTERED_VDOTL
             #pragma shader_feature _ IRIDESCENCE_USE_PHASE_SHIFT
+            #pragma shader_feature _ IRIDESCENCE_USE_GAUSSIAN_FIT
 
             #ifdef IRIDESCENCE_USE_PHASE_SHIFT
                 #define _IridescenceUsePhaseShift true
