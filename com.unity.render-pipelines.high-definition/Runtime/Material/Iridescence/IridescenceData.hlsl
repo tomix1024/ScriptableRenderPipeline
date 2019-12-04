@@ -42,14 +42,6 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     surfaceData.iridescenceThickness += _IridescenceThicknessMapScale * SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvThickness).x;
 #endif // IRIDESCENCE_USE_THICKNESS_MAP
 
-#if defined(DEBUG_DISPLAY)
-    if (_DebugMipMapMode != DEBUGMIPMAPMODE_NONE)
-    {
-        // Not debug streaming information with AxF (this should never be stream)
-        surfaceData.diffuseColor = float3(0.0, 0.0, 0.0);
-    }
-#endif
-
     // -------------------------------------------------------------
     // Builtin Data:
     // -------------------------------------------------------------
