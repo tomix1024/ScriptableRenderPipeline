@@ -76,7 +76,7 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
     float preVdotHVar = lerp(0, VdotH_var, _ReferenceUseVarVdotH);
 
     // Lerp between ideal reflection (assume N=H) and real mean/variance
-    float preVdotL = lerp(2*Sq(NdotV)-1, VdotL_mean, _ReferenceUseVarVdotH);
+    float preVdotL = lerp(2*Sq(NdotV)-1, VdotL_mean, _ReferenceUseMeanVdotH);
     float preVdotLVar = lerp(0, VdotL_var, _ReferenceUseVarVdotH);
 
 
