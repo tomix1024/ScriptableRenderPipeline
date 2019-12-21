@@ -651,11 +651,10 @@ IndirectLighting EvaluateBSDF_ScreenspaceRefraction(LightLoopContext lightLoopCo
     float weight = 1;
     float2 samplingPositionNDC = posInput.positionNDC;
 
-    float3 preLD = SAMPLE_TEXTURE2D_LOD(
+    float3 preLD = SAMPLE_TEXTURE2D_X_LOD(
         _ColorPyramidTexture,
         s_trilinear_clamp_sampler,
-        // Offset by half a texel to properly interpolate between this pixel and its mips
-        samplingPositionNDC * _ColorPyramidScale.xy + _ColorPyramidSize.zw * 0.5,
+        samplingPositionNDC * _ColorPyramidScale.xy,
         mipLevel
     ).rgb;
 
