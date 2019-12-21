@@ -66,13 +66,13 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     // For sphere model:
 
     // TODO get normalOS and viewDirOS from somewhere?!
-    float3 normalOS = surfaceData.normalWS;
-    float3 viewDirOS = V;
+    float3 normalOS = TransformWorldToObjectDir(surfaceData.normalWS);
+    float3 viewDirOS = TransformWorldToObjectDir(V);
 
     // NOTE this is transposed jacobian!
     float2x3 dnormalOSdxyT;
-    dnormalOSdxyT[0] = ddx(surfaceData.normalWS);
-    dnormalOSdxyT[1] = ddy(surfaceData.normalWS);
+    dnormalOSdxyT[0] = ddx(normalOS);// ddx(surfaceData.normalWS);
+    dnormalOSdxyT[1] = ddy(normalOS);// ddy(surfaceData.normalWS);
     float2x3 dviewDirOSdxyT; // Assume view dir constant
     dviewDirOSdxyT[0] = float3(0, 0, 0);
     dviewDirOSdxyT[1] = float3(0, 0, 0);
