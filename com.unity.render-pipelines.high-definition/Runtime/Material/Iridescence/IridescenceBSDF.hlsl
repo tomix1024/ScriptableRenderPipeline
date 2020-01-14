@@ -555,13 +555,13 @@ IridescenceData EvalIridescenceCoefficientsOnly(real eta1, real cosTheta1, real 
 }
 
 
-void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3, real3 kappa3, real4 OPD, out real3 result[4], bool use_phase_shift = true, bool use_ukf = false, real ukf_lambda = 1.0)
+void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3, real3 kappa3, real OPD[SPHERE_MODEL_BOUNCES], out real3 result[SPHERE_MODEL_BOUNCES], bool use_phase_shift = true, bool use_ukf = false, real ukf_lambda = 1.0)
 {
     IridescenceData iridescenceData = EvalIridescenceCoefficientsOnly(eta1, cosTheta1, 0, eta2, eta3, kappa3, use_phase_shift, use_ukf, ukf_lambda);
     // Assume constant optical path difference for now!
 
     int M = _IridescenceTerms;
-    const int N = 4;
+    const int N = SPHERE_MODEL_BOUNCES;
 
     // Prepare single bounce data (at each bounce)
     // NOTE: No C0 here!!!
@@ -658,13 +658,13 @@ void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3
 }
 
 
-void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, real4 OPD, out real3 result[4], int thin_film_bounces)
+void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, real OPD[SPHERE_MODEL_BOUNCES], out real3 result[SPHERE_MODEL_BOUNCES], int thin_film_bounces)
 {
     real minWavelength = _IridescenceWavelengthMinMaxSampleCount.x;
     real maxWavelength = _IridescenceWavelengthMinMaxSampleCount.y;
     int sampleCount = _IridescenceWavelengthMinMaxSampleCount.z;
 
-    const int N = 4;
+    const int N = SPHERE_MODEL_BOUNCES;
 
     real dx = 1.0 / (sampleCount-1);
 

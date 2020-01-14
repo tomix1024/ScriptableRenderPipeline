@@ -35,6 +35,8 @@
 #define DEBUGVIEW_IRIDESCENCE_BSDFDATA_IRIDESCENCE_ETA3      (1060)
 #define DEBUGVIEW_IRIDESCENCE_BSDFDATA_IRIDESCENCE_KAPPA3    (1061)
 
+#define SPHERE_MODEL_BOUNCES 8
+
 // Generated from UnityEngine.Experimental.Rendering.HDPipeline.Iridescence+SurfaceData
 // PackingRules = Exact
 struct SurfaceData
@@ -45,7 +47,7 @@ struct SurfaceData
     float perceptualSmoothness;
     float3 fresnel0;
     float iridescenceThickness;
-    float4 iridescenceThicknessSphereModel;
+    float iridescenceThicknessSphereModel[SPHERE_MODEL_BOUNCES];
     float iridescenceEta2;
     float iridescenceEta3;
     float iridescenceKappa3;
@@ -63,7 +65,7 @@ struct BSDFData
     float perceptualRoughness;
     float roughness;
     float iridescenceThickness;
-    float4 iridescenceThicknessSphereModel;
+    float iridescenceThicknessSphereModel[SPHERE_MODEL_BOUNCES];
     float iridescenceEta2;
     float iridescenceEta3;
     float iridescenceKappa3;

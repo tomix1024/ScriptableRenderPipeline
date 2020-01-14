@@ -51,7 +51,10 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     surfaceData.fresnel0 = _Fresnel0.rgb;
     surfaceData.perceptualSmoothness = _Smoothness;
     surfaceData.iridescenceThickness = _IridescenceThickness;
-    surfaceData.iridescenceThicknessSphereModel = _IridescenceThickness.xxxx;
+    for (int i = 0; i < SPHERE_MODEL_BOUNCES; ++i)
+    {
+        surfaceData.iridescenceThicknessSphereModel[i] = _IridescenceThickness;
+    }
     surfaceData.iridescenceEta2 = _IridescenceEta2;
     surfaceData.iridescenceEta3 = _IridescenceEta3;
     surfaceData.iridescenceKappa3 = _IridescenceKappa3;
@@ -77,7 +80,7 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     dviewDirOSdxyT[0] = float3(0, 0, 0);
     dviewDirOSdxyT[1] = float3(0, 0, 0);
 
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < SPHERE_MODEL_BOUNCES; ++i)
     {
         float2 uvPolar = float2(atan2(normalOS.z, normalOS.x) / TWO_PI, acos(-normalOS.y) / PI); // TODO verify axes and orientations
 

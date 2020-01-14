@@ -36,7 +36,10 @@ float _IridescenceEta2;
 float _IridescenceEta3;
 float _IridescenceKappa3;
 
-float4 _RayMask;
+float4 _RayMask1;
+float4 _RayMask2;
+//float4 _RayMask3;
+//float4 _RayMask4;
 
 float _IridescenceSpectralThinFilmBounces;
 

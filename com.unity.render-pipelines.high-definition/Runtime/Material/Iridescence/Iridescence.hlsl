@@ -239,7 +239,7 @@ struct PreLightData
     float3 specularFGD;              // Store preintegrated BSDF for both specular and diffuse
     float  diffuseFGD;
     float3 transmissiveFGD;          // FGD for transmission through film
-    float3 rayFGD[4];
+    float3 rayFGD[SPHERE_MODEL_BOUNCES];
 
     // Area lights (17 VGPRs)
     // TODO: 'orthoBasisViewNormal' is just a rotation around the normal and should thus be just 1x VGPR.
@@ -339,7 +339,11 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         thickness = 1; // OPD is known to be linear in thickness, want to compute for many thicknesses at once, don't have vectorized implementation...
 
         EvalOpticalPathDifference(eta1, viewAngle, 0, eta2, thickness, OPD, OPDSigma);
-        float4 rayOPD = OPD * bsdfData.iridescenceThicknessSphereModel;
+        float rayOPD[SPHERE_MODEL_BOUNCES];
+        for (int i = 0; i < SPHERE_MODEL_BOUNCES; ++i)
+        {
+            rayOPD[i] = OPD * bsdfData.iridescenceThicknessSphereModel[i];
+        }
 
     #ifdef IRIDESCENCE_DISPLAY_SPECTRAL
 
@@ -353,10 +357,18 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
     #endif // IRIDESCENCE_SPECTRAL
 
-        preLightData.rayFGD[0] *= _RayMask[0];
-        preLightData.rayFGD[1] *= _RayMask[1];
-        preLightData.rayFGD[2] *= _RayMask[2];
-        preLightData.rayFGD[3] *= _RayMask[3];
+        // TODO SPHERE_MODEL_BOUNCES
+
+        preLightData.rayFGD[0] *= _RayMask1[0];
+        preLightData.rayFGD[1] *= _RayMask1[1];
+        preLightData.rayFGD[2] *= _RayMask1[2];
+        preLightData.rayFGD[3] *= _RayMask1[3];
+
+        preLightData.rayFGD[4] *= _RayMask2[0];
+        preLightData.rayFGD[5] *= _RayMask2[1];
+        preLightData.rayFGD[6] *= _RayMask2[2];
+        preLightData.rayFGD[7] *= _RayMask2[3];
+
     #endif // IRIDESCENCE_TRANSPARENT_SPHERE
     }
 
@@ -732,7 +744,7 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
     float3 Vi = V;
     float3 Li = reflect(-V, bsdfData.normalWS);
 
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < SPHERE_MODEL_BOUNCES; ++i)
     {
         // Do transmission in EvaluateBSDF_SSLighting()
         if (i != 1)

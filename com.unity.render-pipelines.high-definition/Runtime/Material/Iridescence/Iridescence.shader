@@ -37,7 +37,10 @@ Shader "HDRP/Iridescence"
 
         [Toggle(IRIDESCENCE_ENABLE_TRANSMISSION)]_IridescenceEnableTransmission("Enable Transmission", Float) = 0.0
         [Toggle(IRIDESCENCE_TRANSPARENT_SPHERE)]_IridescenceTransparentSphere("Enable Transparent Sphere Model", Float) = 0.0
-        _RayMask("Ray Mask", Vector) = (1,1,1,1)
+        _RayMask1("Ray Mask 1", Vector) = (1,1,1,1)
+        _RayMask2("Ray Mask 2", Vector) = (1,1,1,1)
+        //_RayMask3("Ray Mask 3", Vector) = (1,1,1,1)
+        //_RayMask4("Ray Mask 4", Vector) = (1,1,1,1)
 
         _ReferenceUseCorrectOPD("Ref Correct OPD", Range(0.0, 1.0)) = 1.0
         _ReferenceUseCorrectCoeffs("Ref Correct Coeffs", Range(0.0, 1.0)) = 1.0
