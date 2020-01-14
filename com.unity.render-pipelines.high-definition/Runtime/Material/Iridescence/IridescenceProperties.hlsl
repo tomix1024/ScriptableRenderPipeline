@@ -38,6 +38,7 @@ float _IridescenceKappa3;
 
 float4 _RayMask;
 
+float _IridescenceSpectralThinFilmBounces;
 
 // Following two variables are feeded by the C++ Editor for Scene selection
 int _ObjectId;

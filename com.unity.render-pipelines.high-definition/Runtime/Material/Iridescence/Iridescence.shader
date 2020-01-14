@@ -57,6 +57,9 @@ Shader "HDRP/Iridescence"
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048)]_IridescenceDisplayReferenceIBL2048("2048 Sample Ref. IBL", Float) = 0
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K)]_IridescenceDisplayReferenceIBL16k("16k Sample Ref. IBL", Float) = 0
 
+        [Toggle(IRIDESCENCE_DISPLAY_SPECTRAL)]_IridescenceDisplaySpectral("Spectral Rendering", Float) = 0
+        _IridescenceSpectralThinFilmBounces("Thin Film Bounces", Float) = 5
+
         [Toggle(IRIDESCENCE_VARIABLE_TERMS)]_IridescenceVariableTerms("Variable Iridescence Terms", Float) = 0
         _IridescenceTerms("Iridescence Terms", Int) = 2
 
@@ -120,6 +123,7 @@ Shader "HDRP/Iridescence"
     #pragma shader_feature _NORMALMAP
 
     #pragma shader_feature _ IRIDESCENCE_DISPLAY_REFERENCE_IBL_16 IRIDESCENCE_DISPLAY_REFERENCE_IBL_256 IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048 IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K
+    #pragma shader_feature _ IRIDESCENCE_DISPLAY_SPECTRAL
     #pragma shader_feature _ IRIDESCENCE_VARIABLE_TERMS
     #pragma shader_feature _ IRIDESCENCE_REFERENCE_VDOTH_MEAN_VAR
 

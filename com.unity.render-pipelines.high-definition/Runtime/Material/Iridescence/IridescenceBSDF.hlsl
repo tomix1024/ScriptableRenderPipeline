@@ -3,17 +3,17 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/BSDF.hlsl"
 
-TEXTURE2D_ARRAY(_IridescenceSensitivityMap);
-SAMPLER(sampler_IridescenceSensitivityMap);
-real4 _IridescenceSensitivityMap_ST;
+TEXTURE2D_ARRAY(_IridescenceFourierTransformedSensitivityMap);
+SAMPLER(sampler_IridescenceFourierTransformedSensitivityMap);
+real4 _IridescenceFourierTransformedSensitivityMap_ST;
 
-real3 EvalSensitivityTable(real opd, real3 phi, real opdSigma = 0)
+real3 EvalFourierTransformedSensitivityTable(real opd, real3 phi, real opdSigma = 0)
 {
     real3 result;
-    real2 uv = TRANSFORM_TEX(real2(opd, opdSigma), _IridescenceSensitivityMap);
+    real2 uv = TRANSFORM_TEX(real2(opd, opdSigma), _IridescenceFourierTransformedSensitivityMap);
     for (int index = 0; index < 3; ++index)
     {
-        real2 magsqrt_phase = SAMPLE_TEXTURE2D_ARRAY_LOD(_IridescenceSensitivityMap, sampler_IridescenceSensitivityMap, uv, index, 0).rg;
+        real2 magsqrt_phase = SAMPLE_TEXTURE2D_ARRAY_LOD(_IridescenceFourierTransformedSensitivityMap, sampler_IridescenceFourierTransformedSensitivityMap, uv, index, 0).rg;
         real mag = Sq(magsqrt_phase.r);
         real phase = magsqrt_phase.g;
         result[index] = mag * cos(phase - phi[index]);
@@ -23,7 +23,7 @@ real3 EvalSensitivityTable(real opd, real3 phi, real opdSigma = 0)
     return result;
 }
 
-real3 EvalSensitivityGauss(real opd, real3 phi, real opdSigma = 0)
+real3 EvalFourierTransformedSensitivityGauss(real opd, real3 phi, real opdSigma = 0)
 {
     real opdVar = Sq(opdSigma);
 
@@ -59,14 +59,38 @@ real3 EvalSensitivityGauss(real opd, real3 phi, real opdSigma = 0)
     return rgb;
 }
 
-real3 EvalSensitivity(real opd, real3 phi, real opdSigma = 0)
+real3 EvalFourierTransformedSensitivity(real opd, real3 phi, real opdSigma = 0)
 {
     #ifdef IRIDESCENCE_USE_GAUSSIAN_FIT
-    return EvalSensitivityGauss(opd, phi, opdSigma);
+    return EvalFourierTransformedSensitivityGauss(opd, phi, opdSigma);
     #else
-    return EvalSensitivityTable(opd, phi, opdSigma);
+    return EvalFourierTransformedSensitivityTable(opd, phi, opdSigma);
     #endif // IRIDESCENCE_USE_GAUSSIAN_FIT
 }
+
+
+TEXTURE2D(_IridescenceSensitivityMap);
+SAMPLER(sampler_IridescenceSensitivityMap);
+real4 _IridescenceSensitivityMap_ST;
+
+real3 EvalSensitivityTable(real wavelength)
+{
+    real2 uv = TRANSFORM_TEX(real2(wavelength, 0), _IridescenceSensitivityMap);
+    return SAMPLE_TEXTURE2D_LOD(_IridescenceSensitivityMap, sampler_IridescenceSensitivityMap, uv, 0).rgb;
+}
+
+
+real3 EvalSensitivity(real wavelength)
+{
+    // TODO use the same units as optical path difference!
+
+    //#ifdef IRIDESCENCE_USE_GAUSSIAN_FIT
+    //return EvalSensitivityGauss(opd, phi, opdSigma);
+    //#else
+    return EvalSensitivityTable(wavelength);
+    //#endif // IRIDESCENCE_USE_GAUSSIAN_FIT
+}
+
 
 void EvalOpticalPathDifference(real eta1, real cosTheta1, real cosTheta1Var, real eta2, real layerThickness, out real OPD, out real OPDSigma)
 {
@@ -160,11 +184,11 @@ real3 EvalIridescenceCorrectOPD(real eta1, real cosTheta1, real cosTheta1Var, re
     for (int m = 1; m <= _IridescenceTerms /*2*/; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivity(m * OPD, m * phi2p, m * OPDSigma);
+        real3 Smp = 2.0 * EvalFourierTransformedSensitivity(m * OPD, m * phi2p, m * OPDSigma);
         Ip += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivity(m * OPD, m * phi2s, m * OPDSigma);
+        real3 Sms = 2.0 * EvalFourierTransformedSensitivity(m * OPD, m * phi2s, m * OPDSigma);
         Is += Cms * Sms;
     }
 
@@ -239,11 +263,11 @@ real3 EvalIridescenceTransmissionCorrectOPD(real eta1, real cosTheta1, real cosT
     for (int m = 1; m <= _IridescenceTerms /*2*/; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivity(m * OPD, m * phi2p, m * OPDSigma);
+        real3 Smp = 2.0 * EvalFourierTransformedSensitivity(m * OPD, m * phi2p, m * OPDSigma);
         Ip += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivity(m * OPD, m * phi2s, m * OPDSigma);
+        real3 Sms = 2.0 * EvalFourierTransformedSensitivity(m * OPD, m * phi2s, m * OPDSigma);
         Is += Cms * Sms;
     }
 
@@ -340,11 +364,11 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
     for (int m = 1; m <= _IridescenceTerms /*2*/; ++m)
     {
         Cmp *= r123p;
-        real3 Smp = 2.0 * EvalSensitivity(m * OPD, m * phi2p, m * OPDSigma);
+        real3 Smp = 2.0 * EvalFourierTransformedSensitivity(m * OPD, m * phi2p, m * OPDSigma);
         Ip += Cmp * Smp;
 
         Cms *= r123s;
-        real3 Sms = 2.0 * EvalSensitivity(m * OPD, m * phi2s, m * OPDSigma);
+        real3 Sms = 2.0 * EvalFourierTransformedSensitivity(m * OPD, m * phi2s, m * OPDSigma);
         Is += Cms * Sms;
     }
 
@@ -355,7 +379,76 @@ real3 EvalIridescenceCorrect(real eta1, real cosTheta1, real cosTheta1Var, real 
 }
 
 
+real4 _IridescenceWavelengthMinMaxSampleCount; // min, max, sampleCount, 1/sampleCount
 
+real4 jonesMul(real4 J1, real4 J2)
+{
+    // J = real4(re(s), im(s), re(p), im(p))
+
+    real4 Jres;
+    Jres.xz = J1.xz * J2.xz - J1.yw * J2.yw;
+    Jres.yw = J1.xz * J2.yw + J1.yw * J2.xz;
+
+    return Jres;
+}
+
+real4 jonesDiv(real4 J1, real4 J2)
+{
+    // J = real4(re(s), im(s), re(p), im(p))
+
+    real4 Jres = jonesMul(J1, real4(1, -1, 1, -1) * J2);
+    Jres /= real2(dot(J2.xy, J2.xy), dot(J2.zw, J2.zw)).xxyy;
+
+    return Jres;
+}
+
+real2 complexMul(real2 C1, real2 C2)
+{
+    real2 Cres;
+    Cres.x = C1.x * C2.x - C1.y * C2.y;
+    Cres.y = C1.x * C2.y + C1.y * C2.x;
+
+    return Cres;
+}
+
+real2 complexDiv(real2 C1, real2 C2)
+{
+    real2 Cres = complexMul(C1, real2(1, -1) * C2);
+    Cres /= dot(C2.xy, C2.xy);
+
+    return Cres;
+}
+
+real2 complexSqrt(real2 C)
+{
+    // TODO
+}
+
+void fresnelCoefficientsDielectric(real cosTheta1, real eta2, out real rs, out real rp, out real ts, out real tp)
+{
+    // return: real4(re(rs), im(rs), re(rp), im(rp))
+
+    // real2 n2 = real2(eta2, kappa2);
+
+    real sinTheta1Sq = 1 - Sq(cosTheta1);
+    real sinTheta2Sq = sinTheta1Sq / Sq(eta2);
+    real cosTheta2 = sqrt(1 - sinTheta2Sq);
+
+    // rs = (cos1 - n2 cos2) / (cos1 + n2 cos2)
+    // rp = (n2 cos1 - cos2) / (n2 cos1 + cos2)
+
+    real rsnum = cosTheta1 - eta2 * cosTheta2;
+    real rsden = cosTheta1 + eta2 * cosTheta2;
+
+    real rpnum = eta2 * cosTheta1 - cosTheta2;
+    real rpden = eta2 * cosTheta1 + cosTheta2;
+
+    rs = rsnum / rsden;
+    rp = rpnum / rpden;
+
+    ts = 2 * cosTheta1 / rsden;
+    tp = 2 * cosTheta1 / rpden;
+}
 
 struct IridescenceData
 {
@@ -498,11 +591,11 @@ void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3
 
         for (int j = 0; j < N; ++j)
         {
-            real3 Smp = 2.0 * EvalSensitivityTable(m * OPD[j], m * iridescenceData.phi2p, 0);
+            real3 Smp = 2.0 * EvalFourierTransformedSensitivity(m * OPD[j], m * iridescenceData.phi2p, 0);
             reflectionCmSmp[j] += reflectionCmp * Smp;
             transmissionCmSmp[j] += transmissionCmp * Smp;
 
-            real3 Sms = 2.0 * EvalSensitivityTable(m * OPD[j], m * iridescenceData.phi2s, 0);
+            real3 Sms = 2.0 * EvalFourierTransformedSensitivity(m * OPD[j], m * iridescenceData.phi2s, 0);
             reflectionCmSms[j] += reflectionCms * Sms;
             transmissionCmSms[j] += transmissionCms * Sms;
         }
@@ -554,6 +647,130 @@ void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3
 
             C0p[i] *= iridescenceData.reflectionC0p + 1;
             C0s[i] *= iridescenceData.reflectionC0s + 1;
+        }
+    }
+
+    for (int j = 0; j < N; ++j)
+    {
+        // This helps with black pixels:
+        result[j] = 0.5 * max(Is[j].rgb, float3(0,0,0)) + max(Ip[j].rgb, float3(0,0,0));
+    }
+}
+
+
+void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, real4 OPD, out real3 result[4], int thin_film_bounces)
+{
+    real minWavelength = _IridescenceWavelengthMinMaxSampleCount.x;
+    real maxWavelength = _IridescenceWavelengthMinMaxSampleCount.y;
+    int sampleCount = _IridescenceWavelengthMinMaxSampleCount.z;
+
+    const int N = 4;
+
+    real dx = 1.0 / (sampleCount-1);
+
+    real sinTheta1Sq = 1 - Sq(cosTheta1);
+    real cosTheta2 = sqrt(1 - Sq(eta1/eta2) * sinTheta1Sq);
+
+    // TODO Thin-film reflection coefficients and phase shifts!
+
+    real r12s;
+    real r12p;
+    real t12s;
+    real t12p;
+    fresnelCoefficientsDielectric(cosTheta1, eta2/eta1, r12s, r12p, t12s, t12p);
+
+    real r21s;
+    real r21p;
+    real t21s;
+    real t21p;
+    fresnelCoefficientsDielectric(cosTheta2, eta1/eta2, r21s, r21p, t21s, t21p);
+
+    // assume n3 = n1!
+    real r23s = r21s;
+    real r23p = r21p;
+    real t23s = t21s;
+    real t23p = t21p;
+
+
+    real4 Jr23 = real4(r23s, 0, r23p, 0);
+    real4 Jr23r21 = Jr23 * real2(r21s, r21p).xxyy; // jonesMul(Jr23, real4(r21s, 0, r21p, 0)); // jones vector that is applied to get the next higher order path! (without phase shift)
+    real4 Jt12r23t21 = Jr23 * real2(t12s * t21s, t12p * t21p).xxyy;
+
+    // TODO first contribute wave amplitudes without phase shift for first N paths
+    // Then phase-shift them and perform spactral integration
+
+    real3 Ip[N];
+    real3 Is[N];
+
+    for (int j = 0; j < N; ++j)
+    {
+        Ip[j] = 0;
+        Is[j] = 0;
+    }
+
+    for (int i = 0; i < sampleCount; ++i)
+    {
+        // TODO verify that use of dx is correct!
+        real wavelength = lerp(minWavelength, maxWavelength, i * dx);
+        real3 sensitivity = EvalSensitivity(wavelength); // * dx
+
+        // Compute reflection and transmission for each encounter for the current wavelength!
+
+        real Rs[N];
+        real Rp[N];
+        real Ts[N];
+        real Tp[N];
+
+        // j'th interaction...
+        for (int j = 0; j < N; ++j)
+        {
+            real phaseShift = 2*PI * OPD[j] / wavelength;
+            real cosPhaseShift, sinPhaseShift;
+            sincos(phaseShift, sinPhaseShift, cosPhaseShift);
+            // same phase shift for s- and p-polarization
+            real4 JphaseShift = real4(cosPhaseShift, sinPhaseShift, cosPhaseShift, sinPhaseShift);
+
+            real4 Jrefl = real4(r12s, 0, r12p, 0);
+            real4 Jtrans = real4(0, 0, 0, 0);
+
+            real4 JpathR = jonesMul(Jt12r23t21, JphaseShift); // for reflection
+            real4 JpathT = real4(t12s*t21s, 0 , t12p*t21p, 0); // for transmission, ignore phase shift of 0-th order path
+            real4 JincPath = jonesMul(Jr23r21, JphaseShift); // for reflection + transmission
+            for (int k = 0; k < thin_film_bounces; ++k)
+            {
+                Jrefl += JpathR;
+                Jtrans += JpathT;
+                JpathR *= JincPath;
+                JpathT *= JincPath;
+            }
+
+            real2 rs = Jrefl.xy;
+            real2 rp = Jrefl.zw;
+
+            real2 ts = Jtrans.xy;
+            real2 tp = Jtrans.zw;
+
+            Rs[j] = dot(rs, rs);
+            Rp[j] = dot(rp, rp);
+
+            Ts[j] = dot(ts, ts);
+            Tp[j] = dot(tp, tp);
+        }
+
+        Is[0] += sensitivity * Rs[0];
+        Ip[0] += sensitivity * Rp[0];
+
+        for (j = 1; j < N; ++j)
+        {
+            real Rs_intermediate = 1;
+            real Rp_intermediate = 1;
+            for (int k = 1; k < j; ++k)
+            {
+                Rs_intermediate *= Rs[k];
+                Rp_intermediate *= Rp[k];
+            }
+            Is[j] += sensitivity * Ts[0] * Rs_intermediate * Ts[j];
+            Ip[j] += sensitivity * Tp[0] * Rp_intermediate * Tp[j];
         }
     }
 

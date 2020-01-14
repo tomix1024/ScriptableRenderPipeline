@@ -98,6 +98,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public override void Build(HDRenderPipelineAsset hdAsset, RenderPipelineResources defaultResources)
         {
             LoadSpectralSensitivity.instance.Build();
+            LoadFourierTransformedSpectralSensitivity.instance.Build();
             PreIntegratedFGD.instance.Build(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             PreIntegratedVdotH.instance.Build();
             PreIntegratedVdotL.instance.Build();
@@ -107,6 +108,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public override void Cleanup()
         {
             LoadSpectralSensitivity.instance.Cleanup();
+            LoadFourierTransformedSpectralSensitivity.instance.Cleanup();
             PreIntegratedFGD.instance.Cleanup(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             PreIntegratedVdotH.instance.Cleanup();
             PreIntegratedVdotL.instance.Cleanup();
@@ -116,6 +118,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public override void RenderInit(CommandBuffer cmd)
         {
             LoadSpectralSensitivity.instance.RenderInit(cmd);
+            LoadFourierTransformedSpectralSensitivity.instance.RenderInit(cmd);
             PreIntegratedFGD.instance.RenderInit(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse, cmd);
             PreIntegratedVdotH.instance.RenderInit(cmd);
             PreIntegratedVdotL.instance.RenderInit(cmd);
@@ -124,6 +127,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public override void Bind(CommandBuffer cmd)
         {
             LoadSpectralSensitivity.instance.Bind(cmd);
+            LoadFourierTransformedSpectralSensitivity.instance.Bind(cmd);
             PreIntegratedFGD.instance.Bind(cmd, PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             PreIntegratedVdotH.instance.Bind(cmd);
             PreIntegratedVdotL.instance.Bind(cmd);

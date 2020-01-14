@@ -22,62 +22,53 @@ namespace UnityEngine.Rendering.HighDefinition
 
         int m_refCounting = 0;
 
-        Texture2DArray m_SpectralSensitivity;
+        Texture2D m_SpectralSensitivity;
         Vector4 m_SpectralSensitivity_ST;
+        Vector4 m_IridescenceWavelengthMinMaxSampleCount;
 
         LoadSpectralSensitivity() {}
 
 
-        private void LoadData(out Texture2DArray texture, out float muOffset, out float muScale, out float sigmaOffset, out float sigmaScale)
+        private void LoadData(out Texture2D texture, out float minWavelength, out float maxWavelength, out float wavelengthOffset, out float wavelengthScale)
         {
-            int numMu = SpectralSensitivityDataSRGB.numMu;
-            int numSigma = SpectralSensitivityDataSRGB.numSigma;
-            float maxMu = SpectralSensitivityDataSRGB.maxMu;
-            float maxSigma = SpectralSensitivityDataSRGB.maxSigma;
+            int numSamples = SpectralSensitivityDataSRGB.numSamples;
+            minWavelength = SpectralSensitivityDataSRGB.minWavelength;
+            maxWavelength = SpectralSensitivityDataSRGB.maxWavelength;
 
-            float[] Rmag = SpectralSensitivityDataSRGB.Rmag;
-            float[] Rphi = SpectralSensitivityDataSRGB.Rphi;
-            float[] Gmag = SpectralSensitivityDataSRGB.Gmag;
-            float[] Gphi = SpectralSensitivityDataSRGB.Gphi;
-            float[] Bmag = SpectralSensitivityDataSRGB.Bmag;
-            float[] Bphi = SpectralSensitivityDataSRGB.Bphi;
+            float[] R = SpectralSensitivityDataSRGB.R;
+            float[] G = SpectralSensitivityDataSRGB.G;
+            float[] B = SpectralSensitivityDataSRGB.B;
 
-            texture = new Texture2DArray(numMu, numSigma, 3, TextureFormat.RGFloat, mipChain: false, linear: true);
+            texture = new Texture2D(numSamples, 1, TextureFormat.RGBAFloat, mipChain: false, linear: true);
 
-            var colors = new Color[numMu * numSigma];
+            var colors = new Color[numSamples];
             for (int i = 0; i < colors.Length; ++i)
             {
-                colors[i].r = Rmag[i];
-                colors[i].g = Rphi[i];
+                colors[i].r = R[i];
+                colors[i].g = G[i];
+                colors[i].b = B[i];
             }
-            texture.SetPixels(colors, 0);
-
-            for (int i = 0; i < colors.Length; ++i)
-            {
-                colors[i].r = Gmag[i];
-                colors[i].g = Gphi[i];
-            }
-            texture.SetPixels(colors, 1);
-
-            for (int i = 0; i < colors.Length; ++i)
-            {
-                colors[i].r = Bmag[i];
-                colors[i].g = Bphi[i];
-            }
-            texture.SetPixels(colors, 2);
+            texture.SetPixels(colors);
 
             texture.Apply();
             texture.filterMode = FilterMode.Bilinear;
             texture.wrapMode = TextureWrapMode.Clamp;
 
-            // 0   -> 0.5f / size       => offset = 0.5f / size
-            // max -> 1 - 0.5f / size   => scale  = (1 - 0.5f / size - offset) / max
+            // u = x * scale + offset
+            // (0.5f / size) = min * scale + offset
+            // (1 - 0.5f / size) = max * scale + offset
 
-            muOffset = 0.5f / numMu;
-            muScale = (1.0f - 1.0f / numMu) / maxMu;
+            // offset = (0.5f / size) - min * scale
+            // scale = ((1 - 0.5f / size) - offset) / max
 
-            sigmaOffset = 0.5f / numSigma;
-            sigmaScale = (1.0f - 1.0f / numSigma) / maxSigma;
+            // offset = (0.5f / size) - min * scale
+            // scale = (1 - 1.0f / size) / (max - min)
+            // offset = (0.5f / size) - min / (max - min) * (1 - 1.0f / size)
+            // offset = (max - min) * (0.5f / size) / (max - min) - min * (1 - 1.0f / size) / (max - min)
+
+
+            wavelengthOffset = (maxWavelength * (0.5f / numSamples) - minWavelength * (1 - 0.5f / numSamples)) / (maxWavelength - minWavelength);
+            wavelengthScale = (1.0f - 1.0f / numSamples) / (maxWavelength - minWavelength);
         }
 
         public void Build()
@@ -86,10 +77,11 @@ namespace UnityEngine.Rendering.HighDefinition
 
             if (m_refCounting == 0)
             {
-                float muOffset, muScale;
-                float sigmaOffset, sigmaScale;
-                LoadData(out m_SpectralSensitivity, out muOffset, out muScale, out sigmaOffset, out sigmaScale);
-                m_SpectralSensitivity_ST = new Vector4(muScale, sigmaScale, muOffset, sigmaOffset);
+                float wavelengthOffset, wavelengthScale;
+                float minWavelength, maxWavelength;
+                LoadData(out m_SpectralSensitivity, out minWavelength, out maxWavelength, out wavelengthOffset, out wavelengthScale);
+                m_SpectralSensitivity_ST = new Vector4(wavelengthScale, 1, wavelengthOffset, 0);
+                m_IridescenceWavelengthMinMaxSampleCount = new Vector4(minWavelength, maxWavelength, m_SpectralSensitivity.width, 1.0f / m_SpectralSensitivity.width);
             }
 
             m_refCounting++;
@@ -101,10 +93,11 @@ namespace UnityEngine.Rendering.HighDefinition
             // But sometimes it disappears...
             if (m_SpectralSensitivity == null)
             {
-                float muOffset, muScale;
-                float sigmaOffset, sigmaScale;
-                LoadData(out m_SpectralSensitivity, out muOffset, out muScale, out sigmaOffset, out sigmaScale);
-                m_SpectralSensitivity_ST = new Vector4(muScale, sigmaScale, muOffset, sigmaOffset);
+                float wavelengthOffset, wavelengthScale;
+                float minWavelength, maxWavelength;
+                LoadData(out m_SpectralSensitivity, out minWavelength, out maxWavelength, out wavelengthOffset, out wavelengthScale);
+                m_SpectralSensitivity_ST = new Vector4(wavelengthScale, 1, wavelengthOffset, 0);
+                m_IridescenceWavelengthMinMaxSampleCount = new Vector4(minWavelength, maxWavelength, m_SpectralSensitivity.width, 1.0f / m_SpectralSensitivity.width);
             }
         }
 
@@ -126,6 +119,7 @@ namespace UnityEngine.Rendering.HighDefinition
             // TODO HDShaderIDs!
             cmd.SetGlobalTexture("_IridescenceSensitivityMap", m_SpectralSensitivity);
             cmd.SetGlobalVector("_IridescenceSensitivityMap_ST", m_SpectralSensitivity_ST);
+            cmd.SetGlobalVector("_IridescenceWavelengthMinMaxSampleCount", m_IridescenceWavelengthMinMaxSampleCount);
         }
     }
 }

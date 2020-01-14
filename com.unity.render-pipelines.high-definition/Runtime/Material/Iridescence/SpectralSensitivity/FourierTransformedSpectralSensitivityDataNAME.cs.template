@@ -1,0 +1,32 @@
+using System;
+using UnityEngine.Rendering;
+
+namespace UnityEngine.Rendering.HighDefinition
+{
+    public class FourierTransformedSpectralSensitivityDataNAME
+    {
+        public const int numMu = MU_COUNT;
+        public const int numSigma = SIGMA_COUNT;
+        public const float maxMu = MU_MAX;
+        public const float maxSigma = SIGMA_MAX;
+
+        public static readonly float[] Rmag = {
+RMAG_DATA
+        };
+        public static readonly float[] Rphi = {
+RPHI_DATA
+        };
+        public static readonly float[] Gmag = {
+GMAG_DATA
+        };
+        public static readonly float[] Gphi = {
+GPHI_DATA
+        };
+        public static readonly float[] Bmag = {
+BMAG_DATA
+        };
+        public static readonly float[] Bphi = {
+BPHI_DATA
+        };
+    }
+}

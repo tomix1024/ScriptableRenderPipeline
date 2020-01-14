@@ -341,7 +341,18 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
         EvalOpticalPathDifference(eta1, viewAngle, 0, eta2, thickness, OPD, OPDSigma);
         float4 rayOPD = OPD * bsdfData.iridescenceThicknessSphereModel;
 
+    #ifdef IRIDESCENCE_DISPLAY_SPECTRAL
+
+        // LIMITED MODEL BUT SPECTRAL!
+        //iridescenceFGD = EvalIridescenceSpectral(eta1, viewAngle, eta2, OPD);
+        EvalIridescenceSpectralSphereModel(eta1, viewAngle, eta2, rayOPD, preLightData.rayFGD, _IridescenceSpectralThinFilmBounces);
+
+    #else
+
         EvalIridescenceSphereModel(eta1, viewAngle, eta2, eta3, kappa3, rayOPD, preLightData.rayFGD);
+
+    #endif // IRIDESCENCE_SPECTRAL
+
         preLightData.rayFGD[0] *= _RayMask[0];
         preLightData.rayFGD[1] *= _RayMask[1];
         preLightData.rayFGD[2] *= _RayMask[2];

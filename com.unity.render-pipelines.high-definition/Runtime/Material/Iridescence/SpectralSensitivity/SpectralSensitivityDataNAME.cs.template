@@ -5,28 +5,18 @@ namespace UnityEngine.Rendering.HighDefinition
 {
     public class SpectralSensitivityDataNAME
     {
-        public const int numMu = MU_COUNT;
-        public const int numSigma = SIGMA_COUNT;
-        public const float maxMu = MU_MAX;
-        public const float maxSigma = SIGMA_MAX;
+        public const int numSamples = SAMPLE_COUNT;
+        public const float minWavelength = WAVELENGTH_MIN;
+        public const float maxWavelength = WAVELENGTH_MAX;
 
-        public static readonly float[] Rmag = {
-RMAG_DATA
+        public static readonly float[] R = {
+R_DATA
         };
-        public static readonly float[] Rphi = {
-RPHI_DATA
+        public static readonly float[] G = {
+G_DATA
         };
-        public static readonly float[] Gmag = {
-GMAG_DATA
-        };
-        public static readonly float[] Gphi = {
-GPHI_DATA
-        };
-        public static readonly float[] Bmag = {
-BMAG_DATA
-        };
-        public static readonly float[] Bphi = {
-BPHI_DATA
+        public static readonly float[] B = {
+B_DATA
         };
     }
 }
