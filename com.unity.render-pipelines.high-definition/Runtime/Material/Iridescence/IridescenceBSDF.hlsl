@@ -554,6 +554,10 @@ IridescenceData EvalIridescenceCoefficientsOnly(real eta1, real cosTheta1, real 
     return result;
 }
 
+#ifndef SPHERE_MODEL_BOUNCES
+    // Work around compiler errors in shaders that don't use sphere model anyways...
+    #define SPHERE_MODEL_BOUNCES 4
+#endif // SPHERE_MODEL_BOUNCES
 
 void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3, real3 kappa3, real OPD[SPHERE_MODEL_BOUNCES], out real3 result[SPHERE_MODEL_BOUNCES], bool use_phase_shift = true, bool use_ukf = false, real ukf_lambda = 1.0)
 {
@@ -658,7 +662,7 @@ void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3
 }
 
 
-void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, real OPD[SPHERE_MODEL_BOUNCES], out real3 result[SPHERE_MODEL_BOUNCES], int thin_film_bounces)
+void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, real OPD[SPHERE_MODEL_BOUNCES], out real3 result[SPHERE_MODEL_BOUNCES], int thin_film_bounces, bool intermediate_rgb = false)
 {
     real minWavelength = _IridescenceWavelengthMinMaxSampleCount.x;
     real maxWavelength = _IridescenceWavelengthMinMaxSampleCount.y;
@@ -702,10 +706,20 @@ void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, re
     real3 Ip[N];
     real3 Is[N];
 
+    real3 Rs_rgb[N];
+    real3 Rp_rgb[N];
+    real3 Ts_rgb[N];
+    real3 Tp_rgb[N];
+
     for (int j = 0; j < N; ++j)
     {
         Ip[j] = 0;
         Is[j] = 0;
+
+        Rs_rgb[j] = 0;
+        Rp_rgb[j] = 0;
+        Ts_rgb[j] = 0;
+        Tp_rgb[j] = 0;
     }
 
     for (int i = 0; i < sampleCount; ++i)
@@ -755,22 +769,53 @@ void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, re
 
             Ts[j] = dot(ts, ts);
             Tp[j] = dot(tp, tp);
+
+            if (intermediate_rgb)
+            {
+                Rs_rgb[j] += sensitivity * Rs[j];
+                Rp_rgb[j] += sensitivity * Rp[j];
+                Ts_rgb[j] += sensitivity * Ts[j];
+                Tp_rgb[j] += sensitivity * Tp[j];
+            }
         }
 
-        Is[0] += sensitivity * Rs[0];
-        Ip[0] += sensitivity * Rp[0];
+        if (!intermediate_rgb)
+        {
+            Is[0] += sensitivity * Rs[0];
+            Ip[0] += sensitivity * Rp[0];
+
+            for (j = 1; j < N; ++j)
+            {
+                real Rs_intermediate = 1;
+                real Rp_intermediate = 1;
+                for (int k = 1; k < j; ++k)
+                {
+                    Rs_intermediate *= Rs[k];
+                    Rp_intermediate *= Rp[k];
+                }
+                Is[j] += sensitivity * Ts[0] * Rs_intermediate * Ts[j];
+                Ip[j] += sensitivity * Tp[0] * Rp_intermediate * Tp[j];
+            }
+        }
+    }
+
+    if (intermediate_rgb)
+    {
+        // Surprisingly does not introduce much of an error...
+        Is[0] = Rs_rgb[0];
+        Ip[0] = Rp_rgb[0];
 
         for (j = 1; j < N; ++j)
         {
-            real Rs_intermediate = 1;
-            real Rp_intermediate = 1;
+            real3 Rs_rgb_intermediate = 1;
+            real3 Rp_rgb_intermediate = 1;
             for (int k = 1; k < j; ++k)
             {
-                Rs_intermediate *= Rs[k];
-                Rp_intermediate *= Rp[k];
+                Rs_rgb_intermediate *= Rs_rgb[k];
+                Rp_rgb_intermediate *= Rp_rgb[k];
             }
-            Is[j] += sensitivity * Ts[0] * Rs_intermediate * Ts[j];
-            Ip[j] += sensitivity * Tp[0] * Rp_intermediate * Tp[j];
+            Is[j] += Ts_rgb[0] * Rs_rgb_intermediate * Ts_rgb[j];
+            Ip[j] += Tp_rgb[0] * Rp_rgb_intermediate * Tp_rgb[j];
         }
     }
 
@@ -779,6 +824,33 @@ void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, re
         // This helps with black pixels:
         result[j] = 0.5 * max(Is[j].rgb, float3(0,0,0)) + max(Ip[j].rgb, float3(0,0,0));
     }
+
+    /*
+    if (intermediate_rgb)
+    {
+        // Pretend to clip intermediate RGB colors to sRGB color gamut and discard polarization...
+        real3 R_rgb[N];
+        real3 T_rgb[N];
+
+        for (int j = 0; j < N; ++j)
+        {
+            R_rgb[j] = 0.5 * max(Rs_rgb[j], float3(0,0,0)) + max(Rp_rgb[j], float3(0,0,0));
+            T_rgb[j] = 0.5 * max(Ts_rgb[j], float3(0,0,0)) + max(Tp_rgb[j], float3(0,0,0));
+        }
+
+        result[0] = R_rgb[0];
+
+        for (j = 1; j < N; ++j)
+        {
+            real3 R_rgb_intermediate = 1;
+            for (int k = 1; k < j; ++k)
+            {
+                R_rgb_intermediate *= R_rgb[k];
+            }
+            result[j] += T_rgb[0] * R_rgb_intermediate * T_rgb[j];
+        }
+    }
+    */
 }
 
 

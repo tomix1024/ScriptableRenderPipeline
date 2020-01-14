@@ -349,7 +349,7 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
         // LIMITED MODEL BUT SPECTRAL!
         //iridescenceFGD = EvalIridescenceSpectral(eta1, viewAngle, eta2, OPD);
-        EvalIridescenceSpectralSphereModel(eta1, viewAngle, eta2, rayOPD, preLightData.rayFGD, _IridescenceSpectralThinFilmBounces);
+        EvalIridescenceSpectralSphereModel(eta1, viewAngle, eta2, rayOPD, preLightData.rayFGD, _IridescenceSpectralThinFilmBounces, _IridescenceSpectralIntermediateRGB);
 
     #else
 

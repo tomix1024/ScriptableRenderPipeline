@@ -62,6 +62,7 @@ Shader "HDRP/Iridescence"
 
         [Toggle(IRIDESCENCE_DISPLAY_SPECTRAL)]_IridescenceDisplaySpectral("Spectral Rendering", Float) = 0
         _IridescenceSpectralThinFilmBounces("Thin Film Bounces", Float) = 5
+        [Toggle]_IridescenceSpectralIntermediateRGB("Intermediate RGB", Float) = 0
 
         [Toggle(IRIDESCENCE_VARIABLE_TERMS)]_IridescenceVariableTerms("Variable Iridescence Terms", Float) = 0
         _IridescenceTerms("Iridescence Terms", Int) = 2
