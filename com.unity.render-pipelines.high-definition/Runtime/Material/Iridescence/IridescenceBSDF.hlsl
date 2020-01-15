@@ -450,6 +450,97 @@ void fresnelCoefficientsDielectric(real cosTheta1, real eta2, out real rs, out r
     tp = 2 * cosTheta1 / rpden;
 }
 
+real3 EvalIridescenceSpectralOPD(real eta1, real cosTheta1, real eta2, real eta3, real kappa3, real OPD, int thin_film_bounces)
+{
+    real minWavelength = _IridescenceWavelengthMinMaxSampleCount.x;
+    real maxWavelength = _IridescenceWavelengthMinMaxSampleCount.y;
+    int sampleCount = _IridescenceWavelengthMinMaxSampleCount.z;
+
+    real dx = 1.0 / (sampleCount-1);
+
+    real sinTheta1Sq = 1 - Sq(cosTheta1);
+    real cosTheta2 = sqrt(1 - Sq(eta1/eta2) * sinTheta1Sq);
+
+    // TODO Thin-film reflection coefficients and phase shifts!
+
+    real r12s;
+    real r12p;
+    real t12s;
+    real t12p;
+    fresnelCoefficientsDielectric(cosTheta1, eta2/eta1, r12s, r12p, t12s, t12p);
+
+    real r21s;
+    real r21p;
+    real t21s;
+    real t21p;
+    fresnelCoefficientsDielectric(cosTheta2, eta1/eta2, r21s, r21p, t21s, t21p);
+
+    // assume n3 = n1!
+    real r23s = r21s;
+    real r23p = r21p;
+    real t23s = t21s;
+    real t23p = t21p;
+
+
+    real4 Jr23 = real4(r23s, 0, r23p, 0);
+    real4 Jr23r21 = Jr23 * real2(r21s, r21p).xxyy; // jonesMul(Jr23, real4(r21s, 0, r21p, 0)); // jones vector that is applied to get the next higher order path! (without phase shift)
+    real4 Jt12r23t21 = Jr23 * real2(t12s * t21s, t12p * t21p).xxyy;
+
+    // TODO first contribute wave amplitudes without phase shift for first N paths
+    // Then phase-shift them and perform spactral integration
+
+    real3 Ip = 0;
+    real3 Is = 0;
+
+    for (int i = 0; i < sampleCount; ++i)
+    {
+        // TODO verify that use of dx is correct!
+        real wavelength = lerp(minWavelength, maxWavelength, i * dx);
+        real3 sensitivity = EvalSensitivity(wavelength); // * dx
+
+        // Compute reflection and transmission for each encounter for the current wavelength!
+
+        real phaseShift = 2*PI * OPD / wavelength;
+        real cosPhaseShift, sinPhaseShift;
+        sincos(phaseShift, sinPhaseShift, cosPhaseShift);
+        // same phase shift for s- and p-polarization
+        real4 JphaseShift = real4(cosPhaseShift, sinPhaseShift, cosPhaseShift, sinPhaseShift);
+
+        real4 Jrefl = real4(r12s, 0, r12p, 0);
+        real4 Jtrans = real4(0, 0, 0, 0);
+
+        real4 JpathR = jonesMul(Jt12r23t21, JphaseShift); // for reflection
+        real4 JpathT = real4(t12s*t21s, 0 , t12p*t21p, 0); // for transmission, ignore phase shift of 0-th order path
+        real4 JincPath = jonesMul(Jr23r21, JphaseShift); // for reflection + transmission
+        for (int k = 0; k < thin_film_bounces; ++k)
+        {
+            Jrefl += JpathR;
+            Jtrans += JpathT;
+            JpathR *= JincPath;
+            JpathT *= JincPath;
+        }
+
+        real2 rs = Jrefl.xy;
+        real2 rp = Jrefl.zw;
+
+        real2 ts = Jtrans.xy;
+        real2 tp = Jtrans.zw;
+
+        real Rs = dot(rs, rs);
+        real Rp = dot(rp, rp);
+
+        real Ts = dot(ts, ts);
+        real Tp = dot(tp, tp);
+
+        Is += sensitivity * Rs;
+        Ip += sensitivity * Rp;
+    }
+
+    // This helps with black pixels:
+    return 0.5 * max(Is.rgb, float3(0,0,0)) + max(Ip.rgb, float3(0,0,0));
+}
+
+
 struct IridescenceData
 {
     // NOTE: real C0 = 1 + C0 for reflection!

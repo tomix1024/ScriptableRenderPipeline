@@ -1,4 +1,4 @@
-Shader "HDRenderPipeline/Iridescence2DRect"
+Shader "HDRP/Iridescence2DRect"
 {
     Properties
     {
@@ -8,8 +8,8 @@ Shader "HDRenderPipeline/Iridescence2DRect"
         _SmoothnessMin("Smoothness Min", Range(0.0, 1.0)) = 0.0
         _SmoothnessMax("Smoothness Max", Range(0.0, 1.0)) = 1.0
 
-        _IridescenceThicknessMin("Iridescence Thickness Min (µm)", Range(0.0, 3.0)) = 1.0
-        _IridescenceThicknessMax("Iridescence Thickness Max (µm)", Range(0.0, 3.0)) = 1.0
+        _IridescenceThicknessMin("Iridescence Thickness Min (µm)", Range(0.0, 10.0)) = 1.0
+        _IridescenceThicknessMax("Iridescence Thickness Max (µm)", Range(0.0, 10.0)) = 1.0
         _IridescenceEta2("Iridescence Eta 2", Range(1.0, 5.0)) = 1.21
         _IridescenceEta3("Iridescence Eta 3", Range(1.0, 5.0)) = 2.0
         _IridescenceKappa3("Iridescence Kappa 3", Range(0.0, 5.0)) = 0.0
@@ -22,6 +22,9 @@ Shader "HDRenderPipeline/Iridescence2DRect"
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_256)]_IridescenceDisplayReferenceIBL256("256 Sample Ref. IBL", Float) = 0
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_2048)]_IridescenceDisplayReferenceIBL2048("2048 Sample Ref. IBL", Float) = 0
         [Toggle(IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K)]_IridescenceDisplayReferenceIBL16k("16k Sample Ref. IBL", Float) = 0
+
+        [Toggle(IRIDESCENCE_DISPLAY_SPECTRAL)]_IridescenceDisplaySpectral("Spectral Rendering", Float) = 0
+        _IridescenceSpectralThinFilmBounces("Thin Film Bounces", Float) = 5
 
         [Toggle(IRIDESCENCE_VARIABLE_TERMS)]_IridescenceVariableTerms("Variable Iridescence Terms", Float) = 0
         _IridescenceTerms("Iridescence Terms", Int) = 2
@@ -76,6 +79,10 @@ Shader "HDRenderPipeline/Iridescence2DRect"
             #elif defined(IRIDESCENCE_DISPLAY_REFERENCE_IBL_16K)
             #define IRIDESCENCE_DISPLAY_REFERENCE_IBL 16*1024
             #endif
+
+            #pragma shader_feature _ IRIDESCENCE_DISPLAY_SPECTRAL
+
+            int _IridescenceSpectralThinFilmBounces;
 
             #pragma shader_feature _ IRIDESCENCE_VARIABLE_TERMS
 
@@ -333,6 +340,9 @@ Shader "HDRenderPipeline/Iridescence2DRect"
 
                 float3 iridescenceF = EvalIridescenceCorrectOPD(eta1, VdotH_mean, VdotH_var, eta2, eta3, kappa3, OPD, OPDSigma, _IridescenceUsePhaseShift);
 
+            #ifdef IRIDESCENCE_DISPLAY_SPECTRAL
+                iridescenceF = EvalIridescenceSpectralOPD(eta1, VdotH_mean, eta2, eta3, kappa3, OPD, _IridescenceSpectralThinFilmBounces);
+            #endif // IRIDESCENCE_DISPLAY_SPECTRAL
 
 
                 float specularReflectivity, diffuseFGD;
