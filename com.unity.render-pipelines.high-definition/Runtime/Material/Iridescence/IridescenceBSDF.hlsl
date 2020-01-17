@@ -841,12 +841,22 @@ void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, re
             real4 JpathR = jonesMul(Jt12r23t21, JphaseShift); // for reflection
             real4 JpathT = real4(t12s*t21s, 0 , t12p*t21p, 0); // for transmission, ignore phase shift of 0-th order path
             real4 JincPath = jonesMul(Jr23r21, JphaseShift); // for reflection + transmission
-            for (int k = 0; k < thin_film_bounces; ++k)
+
+            if (thin_film_bounces < 0)
             {
-                Jrefl += JpathR;
-                Jtrans += JpathT;
-                JpathR *= JincPath;
-                JpathT *= JincPath;
+                // Airy summation
+                Jrefl += jonesDiv(JpathR, real2(1, 0).xyxy - JincPath);
+                Jtrans += jonesDiv(JpathT, real2(1, 0).xyxy - JincPath);
+            }
+            else
+            {
+                for (int k = 0; k < thin_film_bounces; ++k)
+                {
+                    Jrefl += JpathR;
+                    Jtrans += JpathT;
+                    JpathR *= JincPath;
+                    JpathT *= JincPath;
+                }
             }
 
             real2 rs = Jrefl.xy;
