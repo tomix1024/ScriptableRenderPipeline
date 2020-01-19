@@ -650,7 +650,7 @@ IridescenceData EvalIridescenceCoefficientsOnly(real eta1, real cosTheta1, real 
     #define SPHERE_MODEL_BOUNCES 4
 #endif // SPHERE_MODEL_BOUNCES
 
-void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3, real3 kappa3, real OPD[SPHERE_MODEL_BOUNCES], out real3 result[SPHERE_MODEL_BOUNCES], bool use_phase_shift = true, bool use_ukf = false, real ukf_lambda = 1.0)
+void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3, real3 kappa3, real OPD[SPHERE_MODEL_BOUNCES], out real3 result[SPHERE_MODEL_BOUNCES], bool intermediate_rgb, bool use_phase_shift = true, bool use_ukf = false, real ukf_lambda = 1.0)
 {
     IridescenceData iridescenceData = EvalIridescenceCoefficientsOnly(eta1, cosTheta1, 0, eta2, eta3, kappa3, use_phase_shift, use_ukf, ukf_lambda);
     // Assume constant optical path difference for now!
@@ -658,91 +658,157 @@ void EvalIridescenceSphereModel(real eta1, real cosTheta1, real eta2, real3 eta3
     int M = _IridescenceTerms;
     const int N = SPHERE_MODEL_BOUNCES;
 
-    // Prepare single bounce data (at each bounce)
-    // NOTE: No C0 here!!!
-    float3 reflectionCmSmp[N];
-    float3 reflectionCmSms[N];
-    float3 transmissionCmSmp[N];
-    float3 transmissionCmSms[N];
+    real3 Is[N];
+    real3 Ip[N];
 
-    for (int j = 0; j < N; ++j)
+    if (intermediate_rgb)
     {
-        reflectionCmSmp[j] = 0; // iridescenceData.reflectionC0p + 1; // NOTE that we have to add 1 here
-        reflectionCmSms[j] = 0; // iridescenceData.reflectionC0s + 1; // NOTE that we have to add 1 here
-        transmissionCmSmp[j] = 0; // iridescenceData.transmissionC0p;
-        transmissionCmSms[j] = 0; // iridescenceData.transmissionC0s;
+        // Compute reflectance and transmittance at each film interface
+
+        float3 Rs[N];
+        float3 Rp[N];
+        float3 Ts[N];
+        float3 Tp[N];
+
+        // C0's
+        for (int j = 0; j < N; ++j)
+        {
+            Rs[j] = iridescenceData.reflectionC0s + 1;
+            Rp[j] = iridescenceData.reflectionC0p + 1;
+
+            Ts[j] = iridescenceData.transmissionC0s;
+            Tp[j] = iridescenceData.transmissionC0p;
+        }
+
+        // Reflectance term for m > 0 (pairs of diracs)
+        float3 reflectionCmp = iridescenceData.reflectionC0p;
+        float3 reflectionCms = iridescenceData.reflectionC0s;
+        float3 transmissionCmp = iridescenceData.transmissionC0p;
+        float3 transmissionCms = iridescenceData.transmissionC0s;
+        for (int m = 1; m <= M; ++m)
+        {
+            reflectionCmp *= iridescenceData.nextCmFactorp;
+            reflectionCms *= iridescenceData.nextCmFactors;
+            transmissionCmp *= iridescenceData.nextCmFactorp;
+            transmissionCms *= iridescenceData.nextCmFactors;
+
+            for (int j = 0; j < N; ++j)
+            {
+                real3 Smp = 2.0 * EvalFourierTransformedSensitivity(m * OPD[j], m * iridescenceData.phi2p, 0);
+                Rp[j] += reflectionCmp * Smp;
+                Tp[j] += transmissionCmp * Smp;
+
+                real3 Sms = 2.0 * EvalFourierTransformedSensitivity(m * OPD[j], m * iridescenceData.phi2s, 0);
+                Rs[j] += reflectionCms * Sms;
+                Ts[j] += transmissionCms * Sms;
+            }
+        }
+
+        Is[0] = Rs[0];
+        Ip[0] = Rp[0];
+
+        for (int i = 1; i < N; ++i)
+        {
+            real3 Rs_local = 1;
+            real3 Rp_local = 1;
+            for (int j = 1; j < i; ++j)
+            {
+                Rs_local *= Rs[j];
+                Rp_local *= Rp[j];
+            }
+            Is[i] = Ts[0] * Rs_local * Ts[i];
+            Ip[i] = Tp[0] * Rp_local * Tp[i];
+        }
+
     }
-
-    float3 reflectionCmp = iridescenceData.reflectionC0p;
-    float3 reflectionCms = iridescenceData.reflectionC0s;
-    float3 transmissionCmp = iridescenceData.transmissionC0p;
-    float3 transmissionCms = iridescenceData.transmissionC0s;
-    for (int m = 1; m <= M; ++m)
+    else // intermediate_rgb
     {
-        reflectionCmp *= iridescenceData.nextCmFactorp;
-        reflectionCms *= iridescenceData.nextCmFactors;
-        transmissionCmp *= iridescenceData.nextCmFactorp;
-        transmissionCms *= iridescenceData.nextCmFactors;
+
+        // Prepare single bounce data (at each bounce)
+        // NOTE: No C0 here!!!
+        float3 reflectionCmSmp[N];
+        float3 reflectionCmSms[N];
+        float3 transmissionCmSmp[N];
+        float3 transmissionCmSms[N];
 
         for (int j = 0; j < N; ++j)
         {
-            real3 Smp = 2.0 * EvalFourierTransformedSensitivity(m * OPD[j], m * iridescenceData.phi2p, 0);
-            reflectionCmSmp[j] += reflectionCmp * Smp;
-            transmissionCmSmp[j] += transmissionCmp * Smp;
-
-            real3 Sms = 2.0 * EvalFourierTransformedSensitivity(m * OPD[j], m * iridescenceData.phi2s, 0);
-            reflectionCmSms[j] += reflectionCms * Sms;
-            transmissionCmSms[j] += transmissionCms * Sms;
+            reflectionCmSmp[j] = 0; // iridescenceData.reflectionC0p + 1; // NOTE that we have to add 1 here
+            reflectionCmSms[j] = 0; // iridescenceData.reflectionC0s + 1; // NOTE that we have to add 1 here
+            transmissionCmSmp[j] = 0; // iridescenceData.transmissionC0p;
+            transmissionCmSms[j] = 0; // iridescenceData.transmissionC0s;
         }
-    }
 
-    real3 Ip[N];
-    real3 C0p[N]; // product of C0's accumulated so far for each light path
-    real3 Is[N];
-    real3 C0s[N]; // product of C0's accumulated so far for each light path
-    // real3 I[N]; // result
-
-
-    // 0'th reflection
-    Ip[0] = iridescenceData.reflectionC0p + 1 + reflectionCmSmp[0];
-    Is[0] = iridescenceData.reflectionC0s + 1 + reflectionCmSms[0];
-
-    // (Cache) 0'th transmission
-    for (int i = 1; i < N; ++i)
-    {
-        Ip[i] = iridescenceData.transmissionC0p + transmissionCmSmp[0];
-        Is[i] = iridescenceData.transmissionC0s + transmissionCmSms[0];
-        C0p[i] = iridescenceData.transmissionC0p;
-        C0s[i] = iridescenceData.transmissionC0s;
-    }
-
-
-    for (int j = 1; j < N; ++j)
-    {
-        // (j'st) reflection (and transmission)
-
-        // Finalize path with last transmission
-        Ip[j] *= iridescenceData.transmissionC0p;
-        Is[j] *= iridescenceData.transmissionC0s;
-        // TODO fix this: C0 * C0 is counted twice this way!
-        Ip[j] += C0p[j] * transmissionCmSmp[j];
-        Is[j] += C0s[j] * transmissionCmSms[j];
-
-        // Add reflection to higher order path
-        // TODO only update next path here, and reuse it for next `j`!
-        for (int i = j+1; i < N; ++i)
+        float3 reflectionCmp = iridescenceData.reflectionC0p;
+        float3 reflectionCms = iridescenceData.reflectionC0s;
+        float3 transmissionCmp = iridescenceData.transmissionC0p;
+        float3 transmissionCms = iridescenceData.transmissionC0s;
+        for (int m = 1; m <= M; ++m)
         {
-            // Add attenuated version of "current" bounce
-            Ip[i] *= iridescenceData.reflectionC0p + 1;
-            Is[i] *= iridescenceData.reflectionC0s + 1;
+            reflectionCmp *= iridescenceData.nextCmFactorp;
+            reflectionCms *= iridescenceData.nextCmFactors;
+            transmissionCmp *= iridescenceData.nextCmFactorp;
+            transmissionCms *= iridescenceData.nextCmFactors;
 
-            // TODO fix this: C0 * C0 is counted twice this way!
-            Ip[i] += C0p[i] * reflectionCmSmp[j];
-            Is[i] += C0s[i] * reflectionCmSms[j];
+            for (int j = 0; j < N; ++j)
+            {
+                real3 Smp = 2.0 * EvalFourierTransformedSensitivity(m * OPD[j], m * iridescenceData.phi2p, 0);
+                reflectionCmSmp[j] += reflectionCmp * Smp;
+                transmissionCmSmp[j] += transmissionCmp * Smp;
 
-            C0p[i] *= iridescenceData.reflectionC0p + 1;
-            C0s[i] *= iridescenceData.reflectionC0s + 1;
+                real3 Sms = 2.0 * EvalFourierTransformedSensitivity(m * OPD[j], m * iridescenceData.phi2s, 0);
+                reflectionCmSms[j] += reflectionCms * Sms;
+                transmissionCmSms[j] += transmissionCms * Sms;
+            }
         }
+
+        real3 C0p[N]; // product of C0's accumulated so far for each light path
+        real3 C0s[N]; // product of C0's accumulated so far for each light path
+        // real3 I[N]; // result
+
+
+        // 0'th reflection
+        Ip[0] = iridescenceData.reflectionC0p + 1 + reflectionCmSmp[0];
+        Is[0] = iridescenceData.reflectionC0s + 1 + reflectionCmSms[0];
+
+        // (Cache) 0'th transmission
+        for (int i = 1; i < N; ++i)
+        {
+            Ip[i] = iridescenceData.transmissionC0p + transmissionCmSmp[0];
+            Is[i] = iridescenceData.transmissionC0s + transmissionCmSms[0];
+            C0p[i] = iridescenceData.transmissionC0p;
+            C0s[i] = iridescenceData.transmissionC0s;
+        }
+
+
+        for (int j = 1; j < N; ++j)
+        {
+            // (j'st) reflection (and transmission)
+
+            // Finalize path with last transmission
+            Ip[j] *= iridescenceData.transmissionC0p;
+            Is[j] *= iridescenceData.transmissionC0s;
+            // TODO fix this: C0 * C0 is counted twice this way!
+            Ip[j] += C0p[j] * transmissionCmSmp[j];
+            Is[j] += C0s[j] * transmissionCmSms[j];
+
+            // Add reflection to higher order path
+            // TODO only update next path here, and reuse it for next `j`!
+            for (int i = j+1; i < N; ++i)
+            {
+                // Add attenuated version of "current" bounce
+                Ip[i] *= iridescenceData.reflectionC0p + 1;
+                Is[i] *= iridescenceData.reflectionC0s + 1;
+
+                // TODO fix this: C0 * C0 is counted twice this way!
+                Ip[i] += C0p[i] * reflectionCmSmp[j];
+                Is[i] += C0s[i] * reflectionCmSms[j];
+
+                C0p[i] *= iridescenceData.reflectionC0p + 1;
+                C0s[i] *= iridescenceData.reflectionC0s + 1;
+            }
+        }
+
     }
 
     for (int j = 0; j < N; ++j)

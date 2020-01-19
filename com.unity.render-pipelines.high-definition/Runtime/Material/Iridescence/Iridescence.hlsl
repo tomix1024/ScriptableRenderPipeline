@@ -353,7 +353,7 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
     #else
 
-        EvalIridescenceSphereModel(eta1, viewAngle, eta2, eta3, kappa3, rayOPD, preLightData.rayFGD);
+        EvalIridescenceSphereModel(eta1, viewAngle, eta2, eta3, kappa3, rayOPD, preLightData.rayFGD, _IridescenceSpectralIntermediateRGB);
 
     #endif // IRIDESCENCE_SPECTRAL
 
