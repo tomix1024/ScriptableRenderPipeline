@@ -862,21 +862,27 @@ void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, re
 
     real3 Ip[N];
     real3 Is[N];
+    real3 In[N];
 
     real3 Rs_rgb[N];
     real3 Rp_rgb[N];
+    real3 Rn_rgb[N];
     real3 Ts_rgb[N];
     real3 Tp_rgb[N];
+    real3 Tn_rgb[N];
 
     for (int j = 0; j < N; ++j)
     {
         Ip[j] = 0;
         Is[j] = 0;
+        In[j] = 0;
 
         Rs_rgb[j] = 0;
         Rp_rgb[j] = 0;
+        Rn_rgb[j] = 0;
         Ts_rgb[j] = 0;
         Tp_rgb[j] = 0;
+        Tn_rgb[j] = 0;
     }
 
     for (int i = 0; i < sampleCount; ++i)
@@ -889,8 +895,10 @@ void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, re
 
         real Rs[N];
         real Rp[N];
+        real Rn[N];
         real Ts[N];
         real Tp[N];
+        real Tn[N];
 
         // j'th interaction...
         for (int j = 0; j < N; ++j)
@@ -933,16 +941,20 @@ void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, re
 
             Rs[j] = dot(rs, rs);
             Rp[j] = dot(rp, rp);
+            Rn[j] = 0.5 * (Rs[j] + Rp[j]);
 
             Ts[j] = dot(ts, ts);
             Tp[j] = dot(tp, tp);
+            Tn[j] = 0.5 * (Ts[j] + Tp[j]);
 
             if (intermediate_rgb)
             {
                 Rs_rgb[j] += sensitivity * Rs[j];
                 Rp_rgb[j] += sensitivity * Rp[j];
+                Rn_rgb[j] += sensitivity * Rn[j];
                 Ts_rgb[j] += sensitivity * Ts[j];
                 Tp_rgb[j] += sensitivity * Tp[j];
+                Tn_rgb[j] += sensitivity * Tn[j];
             }
         }
 
@@ -950,18 +962,22 @@ void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, re
         {
             Is[0] += sensitivity * Rs[0];
             Ip[0] += sensitivity * Rp[0];
+            In[0] += sensitivity * Rn[0];
 
             for (j = 1; j < N; ++j)
             {
                 real Rs_intermediate = 1;
                 real Rp_intermediate = 1;
+                real Rn_intermediate = 1;
                 for (int k = 1; k < j; ++k)
                 {
                     Rs_intermediate *= Rs[k];
                     Rp_intermediate *= Rp[k];
+                    Rn_intermediate *= Rn[k];
                 }
                 Is[j] += sensitivity * Ts[0] * Rs_intermediate * Ts[j];
                 Ip[j] += sensitivity * Tp[0] * Rp_intermediate * Tp[j];
+                In[j] += sensitivity * Tn[0] * Rn_intermediate * Tn[j];
             }
         }
     }
@@ -971,25 +987,31 @@ void EvalIridescenceSpectralSphereModel(real eta1, real cosTheta1, real eta2, re
         // Surprisingly does not introduce much of an error...
         Is[0] = Rs_rgb[0];
         Ip[0] = Rp_rgb[0];
+        In[0] = Rn_rgb[0];
 
         for (j = 1; j < N; ++j)
         {
             real3 Rs_rgb_intermediate = 1;
             real3 Rp_rgb_intermediate = 1;
+            real3 Rn_rgb_intermediate = 1;
             for (int k = 1; k < j; ++k)
             {
                 Rs_rgb_intermediate *= Rs_rgb[k];
                 Rp_rgb_intermediate *= Rp_rgb[k];
+                Rn_rgb_intermediate *= Rn_rgb[k];
             }
             Is[j] += Ts_rgb[0] * Rs_rgb_intermediate * Ts_rgb[j];
             Ip[j] += Tp_rgb[0] * Rp_rgb_intermediate * Tp_rgb[j];
+            In[j] += Tn_rgb[0] * Rn_rgb_intermediate * Tn_rgb[j];
         }
     }
 
     for (int j = 0; j < N; ++j)
     {
+        // result[j] = In[j].rgb;
         // This helps with black pixels:
         result[j] = 0.5 * max(Is[j].rgb, float3(0,0,0)) + max(Ip[j].rgb, float3(0,0,0));
+        // result[j] = max(0.5 * (Is[j].rgb + Ip[j].rgb), float3(0,0,0));
     }
 
     /*
