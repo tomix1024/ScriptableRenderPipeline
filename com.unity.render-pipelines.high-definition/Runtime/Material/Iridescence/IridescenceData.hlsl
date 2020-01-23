@@ -62,15 +62,20 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     // Apply offset and tiling
     float2 uvThickness = input.texCoord0.xy * _IridescenceThicknessMap_ST.xy + _IridescenceThicknessMap_ST.zw;
 
-#ifdef IRIDESCENCE_USE_THICKNESS_MAP
-    float2 uvPolar2 = float2(atan2(surfaceData.normalWS.z, surfaceData.normalWS.x) / TWO_PI, acos(surfaceData.normalWS.y) / PI); // TODO verify axes and orientations
-    surfaceData.iridescenceThickness += _IridescenceThicknessMapScale * SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvThickness).x;
-
-    // For sphere model:
+#if defined(IRIDESCENCE_USE_THICKNESS_MAP) || defined(IRIDESCENCE_USE_THICKNESS_CUBEMAP)
 
     // TODO get normalOS and viewDirOS from somewhere?!
     float3 normalOS = TransformWorldToObjectDir(surfaceData.normalWS);
     float3 viewDirOS = TransformWorldToObjectDir(V);
+
+    #ifdef IRIDESCENCE_USE_THICKNESS_CUBEMAP
+        surfaceData.iridescenceThickness += _IridescenceThicknessMapScale * SAMPLE_TEXTURECUBE(_IridescenceThicknessCubeMap, sampler_IridescenceThicknessCubeMap, float3(-1, 1, -1) * normalOS.zyx).x;
+    #else
+        float2 uvPolar2 = float2(atan2(surfaceData.normalWS.z, normalOS.x) / TWO_PI, acos(normalOS.y) / PI); // TODO verify axes and orientations
+        surfaceData.iridescenceThickness += _IridescenceThicknessMapScale * SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvThickness).x;
+    #endif // IRIDESCENCE_USE_THICKNESS_CUBEMAP
+
+    // For sphere model:
 
     // NOTE this is transposed jacobian!
     float2x3 dnormalOSdxyT;
@@ -82,6 +87,10 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
 
     for (int i = 0; i < SPHERE_MODEL_BOUNCES; ++i)
     {
+    #ifdef IRIDESCENCE_USE_THICKNESS_CUBEMAP
+        surfaceData.iridescenceThicknessSphereModel[i] += _IridescenceThicknessMapScale * SAMPLE_TEXTURECUBE(_IridescenceThicknessCubeMap, sampler_IridescenceThicknessCubeMap, float3(-1, 1, -1) * normalOS.zyx).x;
+    #else
+
         float2 uvPolar = float2(atan2(normalOS.z, normalOS.x) / TWO_PI, acos(-normalOS.y) / PI); // TODO verify axes and orientations
 
         float3x2 duvPolardnormalOST;
@@ -107,6 +116,8 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
 
         surfaceData.iridescenceThicknessSphereModel[i] += _IridescenceThicknessMapScale * SAMPLE_TEXTURE2D_GRAD(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvPolar, duvPolardxyT[0], duvPolardxyT[1]).x;
         // surfaceData.iridescenceThicknessSphereModel[i] += _IridescenceThicknessMapScale * SAMPLE_TEXTURE2D(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvPolar).x;
+
+    #endif // IRIDESCENCE_USE_THICKNESS_CUBEMAP
 
         {
             ReflectScreenSpaceDerivatives(normalOS, dnormalOSdxyT, viewDirOS, dviewDirOSdxyT);

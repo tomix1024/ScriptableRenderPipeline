@@ -9,6 +9,8 @@ SAMPLER(sampler_NormalMap);
 
 TEXTURE2D(_IridescenceThicknessMap);
 SAMPLER(sampler_IridescenceThicknessMap);
+TEXTURECUBE(_IridescenceThicknessCubeMap);
+SAMPLER(sampler_IridescenceThicknessCubeMap);
 
 CBUFFER_START(UnityPerMaterial)
 

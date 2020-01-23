@@ -16,6 +16,8 @@ Shader "HDRP/Iridescence"
 
         [Toggle(IRIDESCENCE_USE_THICKNESS_MAP)]_IridescenceUseThicknessMap("Use Thickness Map", Float) = 0
         _IridescenceThicknessMap("Iridescence Thickness Map", 2D) = "white" {}
+        [Toggle(IRIDESCENCE_USE_THICKNESS_CUBEMAP)]_IridescenceUseThicknessCubeMap("Use Thickness CubeMap", Float) = 0.0
+        _IridescenceThicknessCubeMap("Iridescence Thickness CubeMap", Cube) = "wihte" {}
         _IridescenceThicknessMapScale("Iridescence Thickness Map Scale (µm)", Range(0.0, 10.0)) = 1.0
 
         _IridescenceThickness("Iridescence Thickness (µm)", Range(0.0, 10.0)) = 1.0
@@ -135,6 +137,7 @@ Shader "HDRP/Iridescence"
     #pragma shader_feature _ IRIDESCENCE_TRANSPARENT_SPHERE
 
     #pragma shader_feature _ IRIDESCENCE_USE_THICKNESS_MAP
+    #pragma shader_feature _ IRIDESCENCE_USE_THICKNESS_CUBEMAP
 
     #pragma shader_feature _ IRIDESCENCE_USE_PREINTEGRATED_IBLR
     #pragma shader_feature _ IRIDESCENCE_USE_PREINTEGRATED_IBLROUGHNESS
