@@ -446,16 +446,9 @@ real3 EvalSensitivity(real opd, real shift)
     xyz.x += 9.7470e-14 * sqrt(2.0 * PI * 4.5282e+09) * cos(2.2399e+06 * phase + shift) * exp(-4.5282e+09 * phase * phase);
     xyz /= 1.0685e-7;
 
-    // Convert to sRGb color space here.
+    // Convert to linear sRGb color space here.
     // EvalIridescence works in sRGB color space and does not switch...
-
-    real3x3 XYZ_TO_SRGB = real3x3(
-         3.2406, -1.5372, -0.4986,
-        -0.9489,  1.8758,  0.0415,
-         0.0557, -0.2040,  1.0570
-    );
-
-    real3 srgb = mul(XYZ_TO_SRGB, xyz);
+    real3 srgb = mul(XYZ_2_REC709_MAT, xyz);
     return srgb;
 }
 
@@ -542,14 +535,8 @@ real3 EvalIridescence(real eta_1, real cosTheta1, real iridescenceThickness, rea
             I += Cm * Sm;
         }
 
-        // This conversion actually happens in EvalSensitivity.
-        // Cm's live in sRGB color space here, EvalSensitivity also returns value in sRGb now.
-        //// Convert back to RGB reflectance
-        ////I = clamp(mul(I, XYZ_TO_RGB), real3(0.0, 0.0, 0.0), real3(1.0, 1.0, 1.0));
-        ////I = mul(XYZ_TO_RGB, I);
-
         // Clip out-of-gamut colors to sRGB color gamut
-        I = max(I, float3(0,0,0));
+        I = max(I, float3(0.0, 0.0, 0.0));
     }
 
     return I;
