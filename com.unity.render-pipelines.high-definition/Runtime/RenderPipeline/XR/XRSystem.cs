@@ -137,6 +137,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
                 else if (xrEnabled && xrSupported)
                 {
+                    // Disable vsync on the main display when rendering to a XR device
+                    QualitySettings.vSyncCount = 0;
+
                     if (XRGraphics.renderViewportScale != 1.0f)
                     {
                         Debug.LogWarning("RenderViewportScale has no effect with this render pipeline. Use dynamic resolution instead.");
@@ -325,7 +328,7 @@ namespace UnityEngine.Rendering.HighDefinition
             if (display == null || !display.running)
                 return;
 
-            using (new ProfilingSample(cmd, "XR Mirror View"))
+            using (new ProfilingScope(cmd, ProfilingSampler.Get(HDProfileId.XRMirrorView)))
             {
                 cmd.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
 
